@@ -2,10 +2,14 @@
 
 Nenhum PDF real fica no repositório. Todo arquivo usado nos testes é gerado aqui, na hora.
 """
+import os
 from pathlib import Path
 
 import pytest
 from pypdf import PdfWriter
+
+# Testes de interface rodam sem abrir janelas, inclusive no GitHub Actions
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 def _criar_pdf(
