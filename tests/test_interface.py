@@ -140,3 +140,10 @@ def test_ponto_de_entrada_importa():
     import unepdf.__main__ as principal
 
     assert callable(principal.main)
+
+
+def test_textos_do_qt_em_portugues(qapp):
+    from PySide6.QtCore import QCoreApplication
+
+    assert modulo_app.carregar_traducao_do_qt(qapp)
+    assert QCoreApplication.translate("QLineEdit", "&Copy") != "&Copy"

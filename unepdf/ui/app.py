@@ -5,6 +5,7 @@ import logging
 import sys
 import threading
 
+from PySide6.QtCore import QLibraryInfo, QTranslator
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
@@ -43,6 +44,15 @@ def _tratar_erro_em_thread(argumentos: threading.ExceptHookArgs) -> None:
     )
 
 
+def carregar_traducao_do_qt(app: QApplication) -> bool:
+    """Traduz para o português os textos prontos do Qt (ex.: menu de copiar e colar dos campos)."""
+    tradutor = QTranslator(app)
+    if not tradutor.load("qtbase_pt_BR", QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
+        log.warning("Tradução do Qt para português não encontrada")
+        return False
+    return app.installTranslator(tradutor)
+
+
 def executar() -> int:
     configurar_logs()
     log.info("%s %s iniciado", APP_NOME, __version__)
@@ -54,6 +64,7 @@ def executar() -> int:
     app.setApplicationName(APP_NOME)
     app.setApplicationVersion(__version__)
     app.setWindowIcon(QIcon(str(caminho_recurso("assets/icone.ico"))))
+    carregar_traducao_do_qt(app)
     aplicar_tema(app)
 
     sys.excepthook = tratar_erro_nao_capturado
