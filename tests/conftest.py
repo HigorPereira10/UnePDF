@@ -13,17 +13,19 @@ def _criar_pdf(
     paginas: int = 1,
     senha: str | None = None,
     senha_dono: str | None = None,
+    algoritmo: str = "RC4-128",
 ) -> Path:
     """Grava um PDF com páginas A4 em branco.
 
     `senha` exige senha para abrir. `senha_dono` sozinha gera um PDF com senha só de
     permissão, que abre com a senha em branco (comum em notas emitidas por alguns sistemas).
+    `algoritmo` aceita os valores do pypdf, como "RC4-128" e "AES-256".
     """
     escritor = PdfWriter()
     for _ in range(paginas):
         escritor.add_blank_page(width=595, height=842)  # A4 em pontos
     if senha is not None or senha_dono is not None:
-        escritor.encrypt(user_password=senha or "", owner_password=senha_dono)
+        escritor.encrypt(user_password=senha or "", owner_password=senha_dono, algorithm=algoritmo)
     caminho.parent.mkdir(parents=True, exist_ok=True)
     with open(caminho, "wb") as arquivo:
         escritor.write(arquivo)

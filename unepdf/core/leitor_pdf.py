@@ -1,0 +1,52 @@
+"""Leitura e validação individual de cada PDF antes de ser usado por uma ferramenta."""
+from __future__ import annotations
+
+import io
+import logging
+from pathlib import Path
+
+from pypdf import PdfReader
+
+# O pypdf registra avisos para PDFs levemente fora do padrão que não afetam o resultado.
+# Mantemos só erros reais para não poluir o log.
+logging.getLogger("pypdf").setLevel(logging.ERROR)
+
+
+class PdfInvalido(ValueError):
+    """PDF que não pode ser usado. A mensagem é o motivo exibido ao usuário."""
+
+
+def abrir_pdf(caminho: Path) -> PdfReader:
+    """Lê o PDF inteiro para a memória e confirma que ele pode ser usado.
+
+    Ler para a memória evita manter centenas de arquivos abertos na rede
+    durante a operação. Lança PdfInvalido com o motivo quando o arquivo não serve.
+    """
+    try:
+        dados = caminho.read_bytes()
+    except OSError as erro:
+        raise PdfInvalido(f"não foi possível ler o arquivo ({erro.strerror or erro})") from erro
+
+    if not dados:
+        raise PdfInvalido("arquivo vazio (0 KB)")
+
+    try:
+        leitor = PdfReader(io.BytesIO(dados))
+
+        # PDFs com senha só de permissão abrem com senha em branco; os demais são recusados
+        if leitor.is_encrypted and not leitor.decrypt(""):
+            raise PdfInvalido("protegido por senha")
+
+        # Acessa cada página para detectar corrupção agora, e não no meio da gravação
+        for pagina in leitor.pages:
+            _ = pagina.mediabox
+        total_paginas = len(leitor.pages)
+    except PdfInvalido:
+        raise
+    except Exception as erro:
+        raise PdfInvalido("arquivo corrompido ou ilegível") from erro
+
+    if total_paginas == 0:
+        raise PdfInvalido("PDF sem páginas")
+
+    return leitor

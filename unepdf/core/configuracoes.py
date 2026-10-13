@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 from unepdf.constantes import PASTA_SAIDA_PADRAO
 from unepdf.core.erros import ErroUnePDF
+from unepdf.core.gravacao import gravar_com_seguranca
 from unepdf.core.nomenclatura import CARACTERES_INVALIDOS, Perfil
 from unepdf.utils.caminhos import pasta_configuracoes
 
@@ -80,13 +80,10 @@ def _validar(nome: str, valor: object) -> object | None:
 
 
 def salvar(config: Configuracoes, caminho: Path | None = None) -> None:
-    """Grava as configurações em um .tmp e troca pelo definitivo, para nunca deixar o arquivo pela metade."""
+    """Grava as configurações sem nunca deixar o arquivo pela metade."""
     caminho = caminho or caminho_padrao()
-    temporario = caminho.with_name(caminho.name + ".tmp")
+    conteudo = json.dumps(asdict(config), ensure_ascii=False, indent=2).encode("utf-8")
     try:
-        caminho.parent.mkdir(parents=True, exist_ok=True)
-        temporario.write_text(json.dumps(asdict(config), ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(temporario, caminho)
-    except OSError as erro:
-        temporario.unlink(missing_ok=True)
-        raise ErroUnePDF(f"Não foi possível salvar as configurações em:\n{caminho}\n\n{erro.strerror or erro}") from erro
+        gravar_com_seguranca(caminho, lambda arquivo: arquivo.write(conteudo))
+    except ErroUnePDF as erro:
+        raise ErroUnePDF(f"Não foi possível salvar as configurações.\n\n{erro}") from erro

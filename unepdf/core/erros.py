@@ -4,8 +4,12 @@ from __future__ import annotations
 import platform
 import sys
 import traceback
+from typing import TYPE_CHECKING
 
 from unepdf import __version__
+
+if TYPE_CHECKING:
+    from unepdf.core.modelos import ArquivoIgnorado
 
 
 class ErroUnePDF(Exception):
@@ -13,11 +17,24 @@ class ErroUnePDF(Exception):
 
     Todas as exceções previstas do core herdam desta. A causa técnica, quando existir,
     vai encadeada com `raise ... from erro` e aparece só nos detalhes do erro.
+    `ignorados` traz os arquivos rejeitados quando o erro foi causado por eles
+    (ex.: todos os PDFs da pasta estavam vazios).
     """
+
+    def __init__(self, mensagem: str, ignorados: list[ArquivoIgnorado] | None = None):
+        super().__init__(mensagem)
+        self.ignorados = ignorados or []
 
     @property
     def mensagem(self) -> str:
         return str(self)
+
+
+class OperacaoCancelada(ErroUnePDF):
+    """O usuário cancelou a operação antes do fim. Nenhum arquivo foi gerado."""
+
+    def __init__(self) -> None:
+        super().__init__("Operação cancelada. Nenhum arquivo foi gerado.")
 
 
 def mensagem_amigavel(erro: BaseException) -> str:
