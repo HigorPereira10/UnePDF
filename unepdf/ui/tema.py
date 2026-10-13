@@ -105,6 +105,21 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     QListWidget::item:hover {{ background: {c.cartao}; }}
     #listaIgnorados::item {{ color: {c.aviso}; }}
 
+    #secaoConfiguracao {{ background: {c.cartao}; border: 1px solid {c.borda}; border-radius: 14px; }}
+    #secaoConfiguracao QLabel {{ background: transparent; }}
+    #previaCaminho {{ font-family: "Cascadia Mono", Consolas, monospace; color: {c.destaque_2}; }}
+    QLineEdit {{
+        background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 8px; padding: 7px 10px;
+        selection-background-color: {c.destaque};
+    }}
+    QLineEdit:focus {{ border-color: {c.destaque}; }}
+    QRadioButton {{ spacing: 8px; padding: 3px 0; background: transparent; }}
+    QRadioButton::indicator {{
+        width: 14px; height: 14px; border-radius: 9px; border: 2px solid {c.texto_suave}; background: {c.lateral};
+    }}
+    QRadioButton::indicator:hover {{ border-color: {c.destaque}; }}
+    QRadioButton::indicator:checked {{ border: 4px solid {c.destaque}; width: 10px; height: 10px; background: {c.texto}; }}
+
     #mensagemErro {{ font-size: 10.5pt; }}
     #iconeErro {{ color: {c.erro}; font-size: 22pt; font-weight: 700; }}
     """

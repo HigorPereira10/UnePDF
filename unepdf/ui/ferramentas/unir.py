@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -50,6 +51,8 @@ class TelaUnir(TelaFerramenta):
         super().__init__(ferramenta, contexto)
         self._preparo: _Preparo | None = None
         self._etapa = ""  # tarefa em andamento no executor: "selecao" ou "unir"
+        self._ultimos_caminhos: list[Path] = []
+        self._config_usada: tuple = ()
 
         self.area = AreaSoltar(
             "Arraste PDFs ou uma pasta para cá",
@@ -153,6 +156,8 @@ class TelaUnir(TelaFerramenta):
         self.area.mostrar_aviso(None)
         perfil = self.contexto.config.perfil_nomenclatura
         pasta_saida = self.contexto.config.pasta_saida
+        self._ultimos_caminhos = caminhos
+        self._config_usada = (perfil, pasta_saida)
 
         # Roda em segundo plano porque listar uma pasta de rede grande pode demorar
         def preparar(progresso, cancelamento) -> _Preparo:
@@ -187,6 +192,14 @@ class TelaUnir(TelaFerramenta):
             avisos.append("Já existe um arquivo com esse nome. Ele será substituído.")
         self.aviso_selecao.setText("\n".join(avisos))
         self.estados.setCurrentWidget(self.painel_selecao)
+
+    def showEvent(self, evento: QShowEvent) -> None:
+        super().showEvent(evento)
+        # Se o perfil ou a subpasta de saída mudaram nas configurações, o destino mostrado ficou velho
+        config = self.contexto.config
+        mudou = self._config_usada != (config.perfil_nomenclatura, config.pasta_saida)
+        if mudou and self.estados.currentWidget() is self.painel_selecao and not self.executor.em_execucao:
+            self.receber_caminhos(self._ultimos_caminhos)
 
     def limpar(self) -> None:
         self._preparo = None

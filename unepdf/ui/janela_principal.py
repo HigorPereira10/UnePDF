@@ -22,12 +22,14 @@ from unepdf.ui.componentes import caminhos_locais
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import perguntar
 from unepdf.ui.ferramentas import FERRAMENTAS, TelaFerramenta, buscar
+from unepdf.ui.tela_configuracoes import TelaConfiguracoes
 from unepdf.ui.tela_inicial import TelaInicial
 from unepdf.ui.tema import CORES
 from unepdf.utils.recursos import caminho_recurso
 
 CHAVE_INICIO = "inicio"
 CHAVE_UNIR = "unir"
+CHAVE_CONFIGURACOES = "configuracoes"
 
 
 class JanelaPrincipal(QMainWindow):
@@ -42,7 +44,9 @@ class JanelaPrincipal(QMainWindow):
         self.pilha = QStackedWidget()
         self.tela_inicial = TelaInicial(FERRAMENTAS)
         self.tela_inicial.ferramenta_escolhida.connect(self.abrir)
+        self.tela_configuracoes = TelaConfiguracoes(contexto)
         self.pilha.addWidget(self.tela_inicial)
+        self.pilha.addWidget(self.tela_configuracoes)
         # As telas das ferramentas são criadas só quando abertas pela primeira vez
         self.telas: dict[str, TelaFerramenta] = {}
 
@@ -95,6 +99,8 @@ class JanelaPrincipal(QMainWindow):
         for ferramenta in FERRAMENTAS:
             layout.addWidget(self._criar_item(ferramenta.chave, ferramenta.nome, ferramenta.icone))
         layout.addStretch()
+        layout.addWidget(self._criar_item(CHAVE_CONFIGURACOES, "Configurações", "assets/icones/configuracoes.svg"))
+        layout.addSpacing(10)
         layout.addWidget(versao)
         return barra
 
@@ -110,9 +116,11 @@ class JanelaPrincipal(QMainWindow):
         return botao
 
     def abrir(self, chave: str) -> None:
-        """Mostra a tela inicial ou a tela da ferramenta indicada."""
+        """Mostra a tela inicial, as configurações ou a tela da ferramenta indicada."""
         if chave == CHAVE_INICIO:
             tela = self.tela_inicial
+        elif chave == CHAVE_CONFIGURACOES:
+            tela = self.tela_configuracoes
         else:
             if chave not in self.telas:
                 ferramenta = buscar(chave)
