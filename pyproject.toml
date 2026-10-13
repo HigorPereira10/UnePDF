@@ -13,7 +13,7 @@ dynamic = ["version"]
 # Mantenha em sincronia com requirements.txt
 dependencies = [
     "pypdf[crypto]>=6.0",
-    "PySide6>=6.8",
+    "PySide6-Essentials>=6.8",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

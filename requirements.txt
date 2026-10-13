@@ -1,3 +1,3 @@
 # Dependências para rodar o app (mantenha em sincronia com [project.dependencies] do pyproject.toml)
 pypdf[crypto]>=6.0
-PySide6>=6.8
+PySide6-Essentials>=6.8
