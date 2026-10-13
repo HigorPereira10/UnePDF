@@ -69,3 +69,19 @@ def destino_padrao(
 ) -> Path:
     """Caminho completo do PDF unificado: <pasta base>\\<pasta de saída>\\<nome>.pdf"""
     return base / pasta_saida / nome_saida(base, perfil)
+
+
+def pasta_resultado(origem: Path, pasta_saida: str = PASTA_SAIDA_PADRAO) -> Path:
+    """Pasta onde fica o resultado de uma ferramenta que trabalha com um arquivo só.
+
+    Normalmente é a subpasta de saída ao lado do original. Se o original já está dentro dela
+    (ex.: dividir um PDF unificado), o resultado fica na mesma pasta, sem criar outra dentro.
+    """
+    if origem.parent.name.casefold() == pasta_saida.casefold():
+        return origem.parent
+    return origem.parent / pasta_saida
+
+
+def destino_derivado(origem: Path, sufixo: str, pasta_saida: str = PASTA_SAIDA_PADRAO, extensao: str = ".pdf") -> Path:
+    """Ex.: C:\\Notas\\contrato.pdf + "protegido" -> C:\\Notas\\UNIFICADO\\contrato - protegido.pdf"""
+    return pasta_resultado(origem, pasta_saida) / f"{origem.stem} - {sufixo}{extensao}"

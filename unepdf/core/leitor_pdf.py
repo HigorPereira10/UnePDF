@@ -7,6 +7,8 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
+from unepdf.core.erros import ErroUnePDF
+
 # O pypdf registra avisos para PDFs levemente fora do padrão que não afetam o resultado.
 # Mantemos só erros reais para não poluir o log.
 logging.getLogger("pypdf").setLevel(logging.ERROR)
@@ -50,3 +52,11 @@ def abrir_pdf(caminho: Path) -> PdfReader:
         raise PdfInvalido("PDF sem páginas")
 
     return leitor
+
+
+def abrir_pdf_ou_erro(caminho: Path) -> PdfReader:
+    """Como abrir_pdf, para ferramentas que trabalham com um arquivo só: o problema vira ErroUnePDF."""
+    try:
+        return abrir_pdf(caminho)
+    except PdfInvalido as erro:
+        raise ErroUnePDF(f'Não foi possível usar o arquivo "{caminho.name}": {erro}.') from erro

@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 from unepdf.ui.contexto import ContextoApp
-from unepdf.ui.executor import Executor
+from unepdf.ui.executor import Executor, Tarefa
 from unepdf.utils.recursos import caminho_recurso
 
 if TYPE_CHECKING:
@@ -27,6 +27,10 @@ class TelaFerramenta(QWidget):
         self.ferramenta = ferramenta
         self.contexto = contexto
         self.executor = Executor(self)
+        self._resposta_ok: Callable[[object], None] | None = None
+        self._resposta_erro: Callable[[BaseException], None] | None = None
+        self.executor.concluido.connect(lambda resultado: self._resposta_ok and self._resposta_ok(resultado))
+        self.executor.falhou.connect(lambda erro: self._resposta_erro and self._resposta_erro(erro))
 
         icone = QLabel()
         icone.setPixmap(QIcon(str(caminho_recurso(ferramenta.icone))).pixmap(QSize(48, 48)))
@@ -58,6 +62,16 @@ class TelaFerramenta(QWidget):
         layout.addLayout(self.corpo, 1)
         # Ocupa a sobra só quando o corpo está vazio: com conteúdo, o corpo (fator 1) tem prioridade
         layout.addStretch(0)
+
+    def executar(
+        self,
+        tarefa: Tarefa,
+        ao_concluir: Callable[[object], None],
+        ao_falhar: Callable[[BaseException], None],
+    ) -> None:
+        """Roda a tarefa em segundo plano; a resposta chega em `ao_concluir` ou `ao_falhar`, na thread da interface."""
+        self._resposta_ok, self._resposta_erro = ao_concluir, ao_falhar
+        self.executor.executar(tarefa)
 
     def receber_caminhos(self, caminhos: list[Path]) -> None:
         """Recebe arquivos ou pastas soltos na janela. Só é chamado se `aceita_arquivos` for True."""

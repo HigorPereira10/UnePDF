@@ -1,4 +1,4 @@
-"""Tela inicial: grade com todas as ferramentas disponíveis."""
+"""Tela inicial: grade com as ferramentas disponíveis, agrupadas por categoria."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
@@ -6,7 +6,7 @@ from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QGridLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from unepdf.ui.componentes import CartaoFerramenta
-from unepdf.ui.ferramentas import Ferramenta
+from unepdf.ui.ferramentas import Ferramenta, por_categoria
 
 ESPACO_GRADE = 16
 
@@ -22,18 +22,6 @@ class TelaInicial(QWidget):
         subtitulo.setObjectName("subtitulo")
         subtitulo.setWordWrap(True)
 
-        self.cartoes = [
-            CartaoFerramenta(f.chave, f.nome, f.descricao, f.icone, f.motivo_indisponivel())
-            for f in ferramentas
-        ]
-        for cartao in self.cartoes:
-            cartao.clicado.connect(self.ferramenta_escolhida)
-
-        self._grade = QGridLayout()
-        self._grade.setSpacing(ESPACO_GRADE)
-        self._grade.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        self._colunas = 0
-
         conteudo = QWidget()
         conteudo.setObjectName("areaConteudo")
         layout_conteudo = QVBoxLayout(conteudo)
@@ -41,10 +29,28 @@ class TelaInicial(QWidget):
         layout_conteudo.setSpacing(6)
         layout_conteudo.addWidget(titulo)
         layout_conteudo.addWidget(subtitulo)
-        layout_conteudo.addSpacing(22)
-        layout_conteudo.addLayout(self._grade)
+
+        self.cartoes: list[CartaoFerramenta] = []
+        # Uma grade por categoria, cada uma com os seus cartões
+        self._grades: list[tuple[QGridLayout, list[CartaoFerramenta]]] = []
+        for categoria, lista in por_categoria(ferramentas):
+            rotulo = QLabel(categoria)
+            rotulo.setObjectName("tituloCategoria")
+            cartoes = [CartaoFerramenta(f.chave, f.nome, f.descricao, f.icone, f.motivo_indisponivel()) for f in lista]
+            for cartao in cartoes:
+                cartao.clicado.connect(self.ferramenta_escolhida)
+            grade = QGridLayout()
+            grade.setSpacing(ESPACO_GRADE)
+            grade.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            layout_conteudo.addSpacing(18)
+            layout_conteudo.addWidget(rotulo)
+            layout_conteudo.addSpacing(6)
+            layout_conteudo.addLayout(grade)
+            self.cartoes += cartoes
+            self._grades.append((grade, cartoes))
         layout_conteudo.addStretch()
 
+        self._colunas = 0
         rolagem = QScrollArea()
         rolagem.setWidgetResizable(True)
         rolagem.setWidget(conteudo)
@@ -54,14 +60,15 @@ class TelaInicial(QWidget):
         self._organizar(3)
 
     def _organizar(self, colunas: int) -> None:
-        """Redistribui os cartões na grade, para a quantidade de colunas acompanhar a largura da janela."""
+        """Redistribui os cartões nas grades, para a quantidade de colunas acompanhar a largura da janela."""
         if colunas == self._colunas:
             return
         self._colunas = colunas
-        for cartao in self.cartoes:
-            self._grade.removeWidget(cartao)
-        for indice, cartao in enumerate(self.cartoes):
-            self._grade.addWidget(cartao, indice // colunas, indice % colunas)
+        for grade, cartoes in self._grades:
+            for cartao in cartoes:
+                grade.removeWidget(cartao)
+            for indice, cartao in enumerate(cartoes):
+                grade.addWidget(cartao, indice // colunas, indice % colunas)
 
     def resizeEvent(self, evento: QResizeEvent) -> None:
         super().resizeEvent(evento)

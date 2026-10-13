@@ -2,7 +2,14 @@ from pathlib import Path
 
 import pytest
 
-from unepdf.core.nomenclatura import Perfil, destino_padrao, limpar_nome, nome_saida
+from unepdf.core.nomenclatura import (
+    Perfil,
+    destino_derivado,
+    destino_padrao,
+    limpar_nome,
+    nome_saida,
+    pasta_resultado,
+)
 
 RAIZ = Path(r"C:\Notas\Arquivos")
 NF = Perfil.NOTAS_FISCAIS
@@ -87,3 +94,19 @@ def test_limpar_nome_remove_caracteres_proibidos():
     assert limpar_nome('A/B:C*D?. ') == "A-B-C-D-"
     assert limpar_nome('<"x"|y>') == "--x--y-"
     assert limpar_nome("  .nome. ") == "nome"
+
+
+def test_pasta_resultado_fica_na_subpasta_de_saida():
+    assert pasta_resultado(Path(r"C:\Notas\contrato.pdf")) == Path(r"C:\Notas\UNIFICADO")
+    assert pasta_resultado(Path(r"C:\Notas\contrato.pdf"), "RESULTADO") == Path(r"C:\Notas\RESULTADO")
+
+
+def test_original_ja_na_pasta_de_saida_nao_cria_outra_dentro():
+    assert pasta_resultado(Path(r"C:\Notas\UNIFICADO\u.pdf")) == Path(r"C:\Notas\UNIFICADO")
+    assert pasta_resultado(Path(r"C:\Notas\unificado\u.pdf")) == Path(r"C:\Notas\unificado")
+
+
+def test_destino_derivado():
+    origem = Path(r"C:\Notas\contrato.pdf")
+    assert destino_derivado(origem, "protegido") == Path(r"C:\Notas\UNIFICADO\contrato - protegido.pdf")
+    assert destino_derivado(origem, "texto", extensao=".txt") == Path(r"C:\Notas\UNIFICADO\contrato - texto.txt")

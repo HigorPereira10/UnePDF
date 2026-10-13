@@ -113,7 +113,7 @@ class AreaSoltar(QFrame):
     escolher_pasta = Signal()
     escolher_arquivos = Signal()
 
-    def __init__(self, titulo: str, dica: str):
+    def __init__(self, titulo: str, dica: str, com_pasta: bool = True, texto_arquivos: str = "Escolher arquivos"):
         super().__init__()
         self.setObjectName("areaSoltar")
         self.setAcceptDrops(True)
@@ -130,8 +130,12 @@ class AreaSoltar(QFrame):
         self.botao_pasta = QPushButton("Escolher pasta")
         self.botao_pasta.setObjectName("botaoPrincipal")
         self.botao_pasta.clicked.connect(self.escolher_pasta)
-        self.botao_arquivos = QPushButton("Escolher arquivos")
+        self.botao_arquivos = QPushButton(texto_arquivos)
         self.botao_arquivos.clicked.connect(self.escolher_arquivos)
+        if not com_pasta:
+            # Sem a escolha de pasta, o botão de arquivos passa a ser o principal
+            self.botao_pasta.hide()
+            self.botao_arquivos.setObjectName("botaoPrincipal")
         botoes = QHBoxLayout()
         botoes.addStretch()
         botoes.addWidget(self.botao_pasta)
@@ -312,8 +316,16 @@ class PainelResultado(QWidget):
         layout.addWidget(self.secao_ignorados)
         layout.addStretch(1)
 
-    def mostrar_sucesso(self, titulo: str, resumo: str, destino: Path, ignorados: list[ArquivoIgnorado]) -> None:
+    def mostrar_sucesso(
+        self,
+        titulo: str,
+        resumo: str,
+        destino: Path,
+        ignorados: list[ArquivoIgnorado],
+        texto_abrir: str = "Abrir arquivo",
+    ) -> None:
         self.destino = destino
+        self.botao_abrir.setText(texto_abrir)
         self._preencher(titulo, "sucesso", resumo, ignorados)
         self.caminho.setText(str(destino))
         for widget in (self.caminho, self.botao_abrir, self.botao_pasta):

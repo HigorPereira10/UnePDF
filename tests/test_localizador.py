@@ -10,6 +10,7 @@ from unepdf.core.localizador import (
     montar_selecao,
     ordem_natural,
     pasta_base,
+    pdf_unico,
 )
 
 
@@ -117,3 +118,15 @@ def test_selecao_recusa_misturas(tmp_path, criar_pdf, mistura):
         outro.mkdir()
     with pytest.raises(ErroUnePDF, match="uma pasta por vez"):
         montar_selecao([tmp_path / "x", outro])
+
+
+def test_pdf_unico(tmp_path, criar_pdf):
+    a = criar_pdf(tmp_path / "a.pdf")
+    b = criar_pdf(tmp_path / "b.pdf")
+    texto = tmp_path / "c.txt"
+    texto.write_text("x")
+
+    assert pdf_unico([a]) == a
+    for invalida in ([], [a, b], [texto], [tmp_path]):
+        with pytest.raises(ErroUnePDF, match="único arquivo PDF"):
+            pdf_unico(invalida)

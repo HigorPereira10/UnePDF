@@ -95,3 +95,10 @@ def montar_selecao(caminhos: list[Path], pasta_saida: str = PASTA_SAIDA_PADRAO) 
             f'Escolha arquivos PDF que não estejam na pasta de saída ("{pasta_saida}").'
         )
     return Selecao(arquivos, pasta_base(arquivos), descartados=len(caminhos) - len(arquivos))
+
+
+def pdf_unico(caminhos: list[Path]) -> Path:
+    """O único PDF de uma seleção, para ferramentas que trabalham com um arquivo por vez."""
+    if len(caminhos) != 1 or not eh_pdf(caminhos[0]):
+        raise ErroUnePDF("Escolha um único arquivo PDF.")
+    return caminhos[0]

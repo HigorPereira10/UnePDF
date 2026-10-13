@@ -1,7 +1,7 @@
 import pytest
 
 from unepdf.core.erros import ErroUnePDF
-from unepdf.core.gravacao import gravar_com_seguranca
+from unepdf.core.gravacao import gravar_com_seguranca, gravar_pasta_com_seguranca
 from unepdf.core.progresso import Cancelamento
 
 
@@ -47,3 +47,52 @@ def test_cancelamento():
     assert cancelamento.cancelado
     with pytest.raises(ErroUnePDF, match="cancelada"):
         cancelamento.verificar()
+
+
+def _escrever_arquivos(*nomes):
+    def escrever(pasta):
+        for nome in nomes:
+            (pasta / nome).write_text(nome)
+    return escrever
+
+
+def test_pasta_nova_e_substituicao_completa(tmp_path):
+    destino = tmp_path / "saida" / "x - dividido"
+
+    assert gravar_pasta_com_seguranca(destino, _escrever_arquivos("a.pdf", "b.pdf")) is False
+    assert gravar_pasta_com_seguranca(destino, _escrever_arquivos("c.pdf")) is True
+
+    assert sorted(p.name for p in destino.iterdir()) == ["c.pdf"]
+    assert sorted(p.name for p in destino.parent.iterdir()) == ["x - dividido"]
+
+
+def test_pasta_falha_no_meio_preserva_a_anterior(tmp_path):
+    destino = tmp_path / "x"
+    gravar_pasta_com_seguranca(destino, _escrever_arquivos("antigo.pdf"))
+
+    def falhar(pasta):
+        (pasta / "meio.pdf").write_text("x")
+        raise OSError(28, "Espaço insuficiente no disco")
+
+    with pytest.raises(ErroUnePDF, match="Espaço insuficiente"):
+        gravar_pasta_com_seguranca(destino, falhar)
+
+    assert sorted(p.name for p in destino.iterdir()) == ["antigo.pdf"]
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["x"]
+
+
+def test_pasta_recupera_execucao_interrompida_entre_as_trocas(tmp_path):
+    # Simula uma queda de energia depois de mover a pasta antiga e antes de colocar a nova
+    antiga = tmp_path / "x.antiga"
+    antiga.mkdir()
+    (antiga / "bom.pdf").write_text("x")
+    (tmp_path / "x.tmp").mkdir()
+
+    def falhar(pasta):
+        raise ValueError("falha")
+
+    with pytest.raises(ValueError):
+        gravar_pasta_com_seguranca(tmp_path / "x", falhar)
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["x"]
+    assert (tmp_path / "x" / "bom.pdf").exists()

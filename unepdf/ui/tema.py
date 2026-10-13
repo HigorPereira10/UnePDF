@@ -54,6 +54,7 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     #versaoApp {{ color: {c.texto_desativado}; font-size: 8.5pt; }}
 
     #titulo {{ font-size: 20pt; font-weight: 600; }}
+    #tituloCategoria {{ color: {c.texto_suave}; font-size: 11pt; font-weight: 600; }}
     #subtitulo {{ color: {c.texto_suave}; font-size: 10.5pt; }}
 
     #cartaoFerramenta {{ background: {c.cartao}; border: 1px solid {c.borda}; border-radius: 14px; }}
@@ -112,7 +113,12 @@ def folha_de_estilo(c: Cores = CORES) -> str:
         background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 8px; padding: 7px 10px;
         selection-background-color: {c.destaque};
     }}
-    QLineEdit:focus {{ border-color: {c.destaque}; }}
+    QLineEdit:focus, QSpinBox:focus {{ border-color: {c.destaque}; }}
+    QLineEdit:disabled, QSpinBox:disabled {{ color: {c.texto_desativado}; }}
+    QSpinBox {{
+        background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 8px; padding: 6px 8px;
+    }}
+    QSpinBox::up-button, QSpinBox::down-button {{ width: 18px; border: none; background: transparent; }}
     QRadioButton {{ spacing: 8px; padding: 3px 0; background: transparent; }}
     QRadioButton::indicator {{
         width: 14px; height: 14px; border-radius: 9px; border: 2px solid {c.texto_suave}; background: {c.lateral};

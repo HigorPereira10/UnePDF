@@ -21,7 +21,7 @@ from unepdf.constantes import APP_NOME
 from unepdf.ui.componentes import caminhos_locais
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import perguntar
-from unepdf.ui.ferramentas import FERRAMENTAS, TelaFerramenta, buscar
+from unepdf.ui.ferramentas import FERRAMENTAS, TelaFerramenta, buscar, por_categoria
 from unepdf.ui.tela_configuracoes import TelaConfiguracoes
 from unepdf.ui.tela_inicial import TelaInicial
 from unepdf.ui.tema import CORES
@@ -84,8 +84,6 @@ class JanelaPrincipal(QMainWindow):
         marca.addWidget(logo)
         marca.addWidget(nome, 1)
 
-        rotulo = QLabel("FERRAMENTAS")
-        rotulo.setObjectName("rotuloSecao")
         versao = QLabel(f"Versão {__version__}")
         versao.setObjectName("versaoApp")
 
@@ -95,9 +93,12 @@ class JanelaPrincipal(QMainWindow):
         layout.addLayout(marca)
         layout.addSpacing(18)
         layout.addWidget(self._criar_item(CHAVE_INICIO, "Início", "assets/icones/inicio.svg"))
-        layout.addWidget(rotulo)
-        for ferramenta in FERRAMENTAS:
-            layout.addWidget(self._criar_item(ferramenta.chave, ferramenta.nome, ferramenta.icone))
+        for categoria, ferramentas in por_categoria():
+            rotulo = QLabel(categoria.upper())
+            rotulo.setObjectName("rotuloSecao")
+            layout.addWidget(rotulo)
+            for ferramenta in ferramentas:
+                layout.addWidget(self._criar_item(ferramenta.chave, ferramenta.nome, ferramenta.icone))
         layout.addStretch()
         layout.addWidget(self._criar_item(CHAVE_CONFIGURACOES, "Configurações", "assets/icones/configuracoes.svg"))
         layout.addSpacing(10)

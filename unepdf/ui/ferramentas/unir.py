@@ -50,7 +50,6 @@ class TelaUnir(TelaFerramenta):
     def __init__(self, ferramenta: Ferramenta, contexto: ContextoApp):
         super().__init__(ferramenta, contexto)
         self._preparo: _Preparo | None = None
-        self._etapa = ""  # tarefa em andamento no executor: "selecao" ou "unir"
         self._ultimos_caminhos: list[Path] = []
         self._config_usada: tuple = ()
 
@@ -77,8 +76,6 @@ class TelaUnir(TelaFerramenta):
         self._timer_progresso.timeout.connect(lambda: self.estados.setCurrentWidget(self.progresso))
 
         self.executor.progresso.connect(self.progresso.atualizar)
-        self.executor.concluido.connect(self._ao_concluir)
-        self.executor.falhou.connect(self._ao_falhar)
 
     def _montar_painel_selecao(self) -> QWidget:
         self.resumo_selecao = QLabel()
@@ -165,10 +162,22 @@ class TelaUnir(TelaFerramenta):
             destino = destino_padrao(selecao.base, perfil, pasta_saida)
             return _Preparo(selecao, destino, destino.exists())
 
-        self._etapa = "selecao"
         self.progresso.iniciar("Lendo os arquivos...", cancelavel=False)
         self._timer_progresso.start(ATRASO_PROGRESSO_MS)
-        self.executor.executar(preparar)
+        self.executar(preparar, self._ao_preparar, self._ao_falhar_preparo)
+
+    def _ao_preparar(self, preparo: _Preparo) -> None:
+        self._timer_progresso.stop()
+        self._lembrar_pasta(preparo.selecao.base)
+        self._mostrar_selecao(preparo)
+
+    def _ao_falhar_preparo(self, erro: BaseException) -> None:
+        self._timer_progresso.stop()
+        self.estados.setCurrentWidget(self.area)
+        if isinstance(erro, ErroUnePDF):
+            self.area.mostrar_aviso(str(erro))
+        else:
+            mostrar_erro(self, erro)
 
     def _mostrar_selecao(self, preparo: _Preparo, aviso: str = "") -> None:
         self._preparo = preparo
@@ -212,18 +221,15 @@ class TelaUnir(TelaFerramenta):
         if not self._preparo or self.executor.em_execucao:
             return
         arquivos, destino = self._preparo.selecao.arquivos, self._preparo.destino
-        self._etapa = "unir"
         self.progresso.iniciar("Unindo PDFs...")
         self.estados.setCurrentWidget(self.progresso)
-        self.executor.executar(lambda progresso, cancelamento: unir(arquivos, destino, progresso, cancelamento))
+        self.executar(
+            lambda progresso, cancelamento: unir(arquivos, destino, progresso, cancelamento),
+            self._ao_unir,
+            self._ao_falhar_uniao,
+        )
 
-    def _ao_concluir(self, resultado: _Preparo | Resultado) -> None:
-        self._timer_progresso.stop()
-        if self._etapa == "selecao":
-            self._lembrar_pasta(resultado.selecao.base)
-            self._mostrar_selecao(resultado)
-            return
-
+    def _ao_unir(self, resultado: Resultado) -> None:
         resumo = (
             f"{plural(resultado.arquivos, 'arquivo unido', 'arquivos unidos')} em "
             f"{plural(resultado.paginas, 'página', 'páginas')}."
@@ -233,16 +239,7 @@ class TelaUnir(TelaFerramenta):
         self.resultado.mostrar_sucesso("PDF criado!", resumo, resultado.destino, resultado.ignorados)
         self.estados.setCurrentWidget(self.resultado)
 
-    def _ao_falhar(self, erro: BaseException) -> None:
-        self._timer_progresso.stop()
-        if self._etapa == "selecao":
-            self.estados.setCurrentWidget(self.area)
-            if isinstance(erro, ErroUnePDF):
-                self.area.mostrar_aviso(str(erro))
-            else:
-                mostrar_erro(self, erro)
-            return
-
+    def _ao_falhar_uniao(self, erro: BaseException) -> None:
         if isinstance(erro, OperacaoCancelada):
             self._voltar_para_selecao(str(erro))
         elif isinstance(erro, ErroUnePDF) and erro.ignorados:
