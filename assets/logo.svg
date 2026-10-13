@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="degrade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FF4F87"/>
+      <stop offset="1" stop-color="#FFA43A"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 8 H184 L248 72 V192 A56 56 0 0 1 192 248 H64 A56 56 0 0 1 8 192 V64 A56 56 0 0 1 64 8 Z" fill="#1C1A26"/>
+  <path d="M64 9.5 H183.4 L246.5 72.6 V192 A54.5 54.5 0 0 1 192 246.5 H64 A54.5 54.5 0 0 1 9.5 192 V64 A54.5 54.5 0 0 1 64 9.5 Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="3"/>
+  <path d="M184 8 V56 A16 16 0 0 0 200 72 H248 Z" fill="#3A3550"/>
+  <path d="M96 66 V120 A32 32 0 0 0 160 120 V66" fill="none" stroke="url(#degrade)" stroke-width="32" stroke-linecap="round"/>
+  <g fill="none" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M90 216 V186 H102 A9 9 0 0 1 102 204 H90"/>
+    <path d="M122 186 H130 A15 15 0 0 1 130 216 H122 Z"/>
+    <path d="M168 186 H156 V216 M156 201 H166"/>
+  </g>
+</svg>
