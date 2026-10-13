@@ -43,7 +43,8 @@ for %%f in ("%QT%\translations\*.qm") do if /i not "%%~nxf"=="qtbase_pt_BR.qm" d
 REM As licencas ficam ao lado do executavel, visiveis para quem recebe o programa
 copy /y LICENSE "dist\UnePDF\LICENSE.txt" >nul || goto erro
 copy /y THIRD_PARTY_LICENSES.md "dist\UnePDF\" >nul || goto erro
-xcopy /e /i /y /q licenses "dist\UnePDF\licenses" >nul || goto erro
+REM Os textos vem dos proprios pacotes instalados, nas versoes que foram empacotadas
+%PYTHON% tools\coletar_licencas.py "dist\UnePDF\licenses" || goto erro
 
 echo.
 echo Pronto: dist\UnePDF\UnePDF.exe

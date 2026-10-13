@@ -45,12 +45,25 @@ def test_fabrica_de_pdfs_dos_testes(tmp_path, criar_pdf):
     assert so_permissao.is_encrypted and so_permissao.decrypt("")
 
 
-def test_licencas_de_terceiros_citadas_existem():
+def test_licencas_citadas_no_resumo_existem():
     raiz = PACOTE.parent
     resumo = (raiz / "THIRD_PARTY_LICENSES.md").read_text(encoding="utf-8")
-    citados = set(re.findall(r"\((licenses/[^)]+\.txt)\)", resumo))
+    citados = re.findall(r"\]\(((?:licenses|tools)/[^)]*)\)", resumo)
 
     assert citados
-    assert all((raiz / caminho).is_file() for caminho in citados)
-    # Todo texto da pasta precisa estar citado no resumo
-    assert {f"licenses/{p.name}" for p in (raiz / "licenses").iterdir()} == citados
+    assert all((raiz / caminho).exists() for caminho in citados)
+
+
+def test_coletor_copia_as_licencas_de_todas_as_dependencias(tmp_path):
+    import importlib.util
+
+    raiz = PACOTE.parent
+    especificacao = importlib.util.spec_from_file_location("coletar_licencas", raiz / "tools" / "coletar_licencas.py")
+    coletor = importlib.util.module_from_spec(especificacao)
+    especificacao.loader.exec_module(coletor)
+
+    assert coletor.coletar(tmp_path) == []  # nenhum pacote sem licença
+    nomes = {p.name for p in tmp_path.iterdir()}
+    assert {"LGPL-3.0.txt", "GPL-3.0.txt", "Python", "pypdf", "cryptography", "pypdfium2"} <= nomes
+    # O texto da licença comercial do Qt não pode ir junto: o app usa a LGPL
+    assert not list(tmp_path.rglob("*Commercial*"))
