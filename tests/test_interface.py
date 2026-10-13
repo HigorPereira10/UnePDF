@@ -147,3 +147,22 @@ def test_textos_do_qt_em_portugues(qapp):
 
     assert modulo_app.carregar_traducao_do_qt(qapp)
     assert QCoreApplication.translate("QLineEdit", "&Copy") != "&Copy"
+
+
+def test_fechar_o_dialogo_logo_depois_de_copiar(qtbot):
+    dialogo = DialogoErro(None, ValueError("x"))
+    dialogo.botao_copiar.click()
+    dialogo.deleteLater()
+    qtbot.wait(50)
+    # O temporizador que volta o texto do botão não pode disparar depois do diálogo destruído
+    from PySide6.QtCore import QCoreApplication, QEvent
+
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    qtbot.wait(2100)
+
+
+def test_coleta_de_lixo_automatica_desligada_durante_o_app():
+    import gc
+
+    # O coletor da thread principal (ligado no conftest, como no app) assume a coleta
+    assert not gc.isenabled()

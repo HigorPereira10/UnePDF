@@ -65,7 +65,8 @@ class DialogoErro(QDialog):
     def _copiar(self) -> None:
         QApplication.clipboard().setText(self.detalhes)
         self.botao_copiar.setText("Copiado!")
-        QTimer.singleShot(2000, lambda: self.botao_copiar.setText("Copiar detalhes do erro"))
+        # Ligado ao botão: se o diálogo for fechado antes, o temporizador é cancelado junto
+        QTimer.singleShot(2000, self.botao_copiar, lambda: self.botao_copiar.setText("Copiar detalhes do erro"))
 
 
 def mostrar_erro(pai: QWidget | None, erro: BaseException, titulo: str = "Não foi possível concluir") -> None:

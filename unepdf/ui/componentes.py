@@ -357,4 +357,5 @@ class PainelResultado(QWidget):
     def _copiar_ignorados(self) -> None:
         QApplication.clipboard().setText(self.lista_ignorados.texto())
         self.botao_copiar.setText("Copiado!")
-        QTimer.singleShot(2000, lambda: self.botao_copiar.setText("Copiar lista"))
+        # Ligado ao botão: se o painel for destruído antes, o temporizador é cancelado junto
+        QTimer.singleShot(2000, self.botao_copiar, lambda: self.botao_copiar.setText("Copiar lista"))

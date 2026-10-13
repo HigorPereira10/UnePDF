@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 from unepdf import __version__
 from unepdf.constantes import APP_ID, APP_NOME
 from unepdf.core import configuracoes
+from unepdf.ui.coletor import ColetorNaThreadPrincipal
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import mostrar_erro
 from unepdf.ui.janela_principal import JanelaPrincipal
@@ -66,6 +67,8 @@ def executar() -> int:
     app.setWindowIcon(QIcon(str(caminho_recurso("assets/icone.ico"))))
     carregar_traducao_do_qt(app)
     aplicar_tema(app)
+    # Precisa existir enquanto o app estiver aberto; o pai (app) mantém o objeto vivo
+    ColetorNaThreadPrincipal(app)
 
     sys.excepthook = tratar_erro_nao_capturado
     threading.excepthook = _tratar_erro_em_thread

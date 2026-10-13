@@ -46,6 +46,17 @@ def numeros_das_paginas(caminho: Path) -> list[int]:
     return [round(float(p.mediabox.width)) - 100 for p in PdfReader(caminho).pages]
 
 
+@pytest.fixture(scope="session", autouse=True)
+def coleta_de_lixo_na_thread_principal(request):
+    """Mesma proteção do app: sem ela, testes com threads podem fechar o Python de forma intermitente."""
+    from unepdf.ui.coletor import ColetorNaThreadPrincipal
+
+    request.getfixturevalue("qapp")
+    coletor = ColetorNaThreadPrincipal()
+    yield
+    coletor.encerrar()
+
+
 @pytest.fixture
 def criar_pdf():
     """Fixture que devolve a função de criar PDFs, para usar nos testes."""
