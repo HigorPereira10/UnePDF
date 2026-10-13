@@ -54,6 +54,17 @@ def interpretar_grupos(texto: str, total: int) -> list[list[int]]:
     return grupos
 
 
+def descrever_intervalos(indices: list[int]) -> str:
+    """O caminho inverso de interpretar_grupos: [0, 1, 2, 4] -> "1-3, 5"."""
+    partes = []
+    for indice in sorted(set(indices)):
+        if partes and indice == partes[-1][1] + 1:
+            partes[-1][1] = indice
+        else:
+            partes.append([indice, indice])
+    return ", ".join(f"{a + 1}" if a == b else f"{a + 1}-{b + 1}" for a, b in partes)
+
+
 def interpretar_paginas(texto: str, total: int) -> list[int]:
     """Como interpretar_grupos, mas devolve uma lista só, sem repetições e na ordem digitada."""
     return list(dict.fromkeys(p for grupo in interpretar_grupos(texto, total) for p in grupo))

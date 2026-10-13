@@ -172,7 +172,6 @@ class JanelaPrincipal(QMainWindow):
         ):
             evento.ignore()
             return
-        for tela in ocupadas:
-            tela.executor.cancelar()
-            tela.executor.aguardar()
+        for tela in self.telas.values():
+            tela.encerrar()
         evento.accept()

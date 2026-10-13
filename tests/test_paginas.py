@@ -4,6 +4,7 @@ from pypdf import PdfReader
 
 from unepdf.core.erros import ErroUnePDF, OperacaoCancelada
 from unepdf.core.paginas import (
+    descrever_intervalos,
     extrair,
     girar,
     interpretar_grupos,
@@ -144,3 +145,14 @@ def test_relata_progresso(tmp_path, criar_pdf):
     chamadas = []
     extrair(origem, [1, 0], tmp_path / "e.pdf", lambda *a: chamadas.append(a))
     assert chamadas == [(1, 3, "Página 2"), (2, 3, "Página 1"), (3, 3, "Gravando e.pdf")]
+
+
+@pytest.mark.parametrize("indices,texto", [
+    ([], ""),
+    ([0], "1"),
+    ([0, 1, 2, 4], "1-3, 5"),
+    ([9, 7, 8, 0], "1, 8-10"),
+    ([3, 3, 4], "4-5"),
+])
+def test_descrever_intervalos(indices, texto):
+    assert descrever_intervalos(indices) == texto

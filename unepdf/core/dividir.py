@@ -142,6 +142,13 @@ def dividir_a_cada(origem: Path, n: int, pasta_destino: Path, progresso=None, ca
     return gravar_partes(leitor, partes, pasta_destino, progresso, cancelamento)
 
 
+def separar_paginas(origem: Path, paginas: list[int], pasta_destino: Path, progresso=None, cancelamento=None) -> Resultado:
+    """Um PDF para cada página indicada."""
+    leitor = abrir_pdf_ou_erro(origem)
+    partes = [Parte(f"{origem.stem} - página {p + 1}", [p]) for p in paginas]
+    return gravar_partes(leitor, partes, pasta_destino, progresso, cancelamento)
+
+
 def dividir_por_marcadores(origem: Path, pasta_destino: Path, progresso=None, cancelamento=None) -> Resultado:
     leitor = abrir_pdf_ou_erro(origem)
     return gravar_partes(leitor, partes_por_marcadores(leitor, origem.stem), pasta_destino, progresso, cancelamento)

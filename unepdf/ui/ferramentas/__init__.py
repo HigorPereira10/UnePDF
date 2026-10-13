@@ -11,6 +11,7 @@ from typing import Callable
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
 from unepdf.ui.ferramentas.dividir import TelaDividir
+from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
 from unepdf.ui.ferramentas.unir import TelaUnir
 
 # Ordem em que as categorias aparecem na tela inicial e na barra lateral
@@ -49,6 +50,22 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/dividir.svg",
         categoria="Organizar",
         tela=TelaDividir,
+    ),
+    Ferramenta(
+        chave="organizar",
+        nome="Organizar páginas",
+        descricao="Reordene arrastando, gire e remova páginas, vendo as miniaturas.",
+        icone="assets/icones/organizar.svg",
+        categoria="Organizar",
+        tela=TelaOrganizar,
+    ),
+    Ferramenta(
+        chave="extrair",
+        nome="Extrair páginas",
+        descricao="Escolha páginas de um PDF e salve em um novo arquivo.",
+        icone="assets/icones/extrair.svg",
+        categoria="Organizar",
+        tela=TelaExtrair,
     ),
 ]
 

@@ -24,6 +24,11 @@ def abrir_pdf(caminho: Path) -> PdfReader:
     Ler para a memória evita manter centenas de arquivos abertos na rede
     durante a operação. Lança PdfInvalido com o motivo quando o arquivo não serve.
     """
+    return ler_pdf(caminho)[0]
+
+
+def ler_pdf(caminho: Path) -> tuple[PdfReader, bytes]:
+    """Como abrir_pdf, devolvendo também os bytes lidos (ex.: para gerar miniaturas sem ler de novo)."""
     try:
         dados = caminho.read_bytes()
     except OSError as erro:
@@ -51,12 +56,16 @@ def abrir_pdf(caminho: Path) -> PdfReader:
     if total_paginas == 0:
         raise PdfInvalido("PDF sem páginas")
 
-    return leitor
+    return leitor, dados
 
 
 def abrir_pdf_ou_erro(caminho: Path) -> PdfReader:
     """Como abrir_pdf, para ferramentas que trabalham com um arquivo só: o problema vira ErroUnePDF."""
+    return ler_pdf_ou_erro(caminho)[0]
+
+
+def ler_pdf_ou_erro(caminho: Path) -> tuple[PdfReader, bytes]:
     try:
-        return abrir_pdf(caminho)
+        return ler_pdf(caminho)
     except PdfInvalido as erro:
         raise ErroUnePDF(f'Não foi possível usar o arquivo "{caminho.name}": {erro}.') from erro

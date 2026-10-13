@@ -73,6 +73,11 @@ class TelaFerramenta(QWidget):
         self._resposta_ok, self._resposta_erro = ao_concluir, ao_falhar
         self.executor.executar(tarefa)
 
+    def encerrar(self) -> None:
+        """Interrompe o trabalho em segundo plano antes de fechar o app."""
+        self.executor.cancelar()
+        self.executor.aguardar()
+
     def receber_caminhos(self, caminhos: list[Path]) -> None:
         """Recebe arquivos ou pastas soltos na janela. Só é chamado se `aceita_arquivos` for True."""
         raise NotImplementedError

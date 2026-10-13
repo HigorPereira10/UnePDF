@@ -144,3 +144,14 @@ def test_relata_progresso_por_arquivo(tmp_path, criar_pdf):
     chamadas = []
     dividir.dividir_a_cada(origem, 1, tmp_path / "d", lambda *a: chamadas.append(a))
     assert chamadas == [(1, 2, "a - página 1.pdf"), (2, 2, "a - página 2.pdf")]
+
+
+def test_separar_paginas(tmp_path, criar_pdf):
+    origem = criar_pdf(tmp_path / "a.pdf", paginas=5, identificar=True)
+    pasta = tmp_path / "a - páginas extraídas"
+
+    resultado = dividir.separar_paginas(origem, [1, 3], pasta)
+
+    assert resultado.arquivos == 2
+    assert _arquivos(pasta) == ["a - página 2.pdf", "a - página 4.pdf"]
+    assert numeros_das_paginas(pasta / "a - página 4.pdf") == [4]
