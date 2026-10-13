@@ -1,11 +1,50 @@
 """Componentes visuais reutilizáveis, já com o estilo do app aplicado."""
 from __future__ import annotations
 
-from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QKeyEvent, QMouseEvent
-from PySide6.QtWidgets import QFrame, QLabel, QSizePolicy, QVBoxLayout
+from pathlib import Path
 
+from PySide6.QtCore import QMimeData, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import (
+    QDragEnterEvent,
+    QDragLeaveEvent,
+    QDropEvent,
+    QFontMetrics,
+    QIcon,
+    QKeyEvent,
+    QMouseEvent,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QProgressBar,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
+from unepdf.core.modelos import ArquivoIgnorado
+from unepdf.ui.dialogos import mostrar_erro
+from unepdf.utils import sistema
 from unepdf.utils.recursos import caminho_recurso
+from unepdf.utils.texto import plural
+
+
+def caminhos_locais(dados: QMimeData) -> list[Path]:
+    """Arquivos e pastas do computador em um arrastar e soltar (links da web ficam de fora)."""
+    if not dados.hasUrls():
+        return []
+    return [Path(url.toLocalFile()) for url in dados.urls() if url.isLocalFile()]
+
+
+def _repintar(widget: QWidget) -> None:
+    # O Qt só reaplica a folha de estilo depois de uma propriedade mudar se for avisado
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
 
 
 class CartaoFerramenta(QFrame):
@@ -65,3 +104,245 @@ class CartaoFerramenta(QFrame):
             self.clicado.emit(self.chave)
         else:
             super().keyPressEvent(evento)
+
+
+class AreaSoltar(QFrame):
+    """Área para arrastar arquivos ou pastas, com os botões de escolha ao lado."""
+
+    caminhos_soltos = Signal(list)
+    escolher_pasta = Signal()
+    escolher_arquivos = Signal()
+
+    def __init__(self, titulo: str, dica: str):
+        super().__init__()
+        self.setObjectName("areaSoltar")
+        self.setAcceptDrops(True)
+        self.setProperty("arrastando", False)
+
+        rotulo_titulo = QLabel(titulo)
+        rotulo_titulo.setObjectName("tituloSoltar")
+        rotulo_titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        rotulo_dica = QLabel(dica)
+        rotulo_dica.setObjectName("subtitulo")
+        rotulo_dica.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        rotulo_dica.setWordWrap(True)
+
+        self.botao_pasta = QPushButton("Escolher pasta")
+        self.botao_pasta.setObjectName("botaoPrincipal")
+        self.botao_pasta.clicked.connect(self.escolher_pasta)
+        self.botao_arquivos = QPushButton("Escolher arquivos")
+        self.botao_arquivos.clicked.connect(self.escolher_arquivos)
+        botoes = QHBoxLayout()
+        botoes.addStretch()
+        botoes.addWidget(self.botao_pasta)
+        botoes.addWidget(self.botao_arquivos)
+        botoes.addStretch()
+
+        self.aviso = QLabel()
+        self.aviso.setObjectName("aviso")
+        self.aviso.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.aviso.setWordWrap(True)
+        self.aviso.hide()
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(32, 32, 32, 32)
+        layout.setSpacing(10)
+        layout.addStretch()
+        layout.addWidget(rotulo_titulo)
+        layout.addWidget(rotulo_dica)
+        layout.addSpacing(14)
+        layout.addLayout(botoes)
+        layout.addSpacing(8)
+        layout.addWidget(self.aviso)
+        layout.addStretch()
+
+    def mostrar_aviso(self, texto: str | None) -> None:
+        self.aviso.setText(texto or "")
+        self.aviso.setVisible(bool(texto))
+
+    def _destacar(self, ativo: bool) -> None:
+        self.setProperty("arrastando", ativo)
+        _repintar(self)
+
+    def dragEnterEvent(self, evento: QDragEnterEvent) -> None:
+        if caminhos_locais(evento.mimeData()):
+            evento.acceptProposedAction()
+            self._destacar(True)
+
+    def dragLeaveEvent(self, evento: QDragLeaveEvent) -> None:
+        self._destacar(False)
+
+    def dropEvent(self, evento: QDropEvent) -> None:
+        self._destacar(False)
+        caminhos = caminhos_locais(evento.mimeData())
+        if caminhos:
+            evento.acceptProposedAction()
+            self.caminhos_soltos.emit(caminhos)
+
+
+class PainelProgresso(QWidget):
+    """Barra de progresso com o passo atual e o botão de cancelar."""
+
+    cancelar = Signal()
+
+    def __init__(self):
+        super().__init__()
+        self.titulo = QLabel()
+        self.titulo.setObjectName("tituloResultado")
+        self.barra = QProgressBar()
+        self.barra.setTextVisible(False)
+        self.detalhe = QLabel()
+        self.detalhe.setObjectName("subtitulo")
+        self.botao_cancelar = QPushButton("Cancelar")
+        self.botao_cancelar.clicked.connect(self._pedir_cancelamento)
+
+        linha = QHBoxLayout()
+        linha.addWidget(self.detalhe, 1)
+        linha.addWidget(self.botao_cancelar)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 24, 0, 0)
+        layout.setSpacing(12)
+        layout.addWidget(self.titulo)
+        layout.addWidget(self.barra)
+        layout.addLayout(linha)
+        layout.addStretch()
+
+    def iniciar(self, titulo: str, cancelavel: bool = True) -> None:
+        """Mostra a barra em modo "ocupado" até chegar o primeiro progresso."""
+        self.titulo.setText(titulo)
+        self.detalhe.setText("")
+        self.barra.setRange(0, 0)
+        self.botao_cancelar.setVisible(cancelavel)
+        self.botao_cancelar.setEnabled(True)
+        self.botao_cancelar.setText("Cancelar")
+
+    def atualizar(self, atual: int, total: int, descricao: str) -> None:
+        self.barra.setRange(0, total)
+        self.barra.setValue(atual)
+        # Nomes de arquivo longos são encurtados no meio, para não esticar a janela
+        largura = max(100, self.detalhe.width())
+        texto = f"{atual} de {total}: {descricao}"
+        self.detalhe.setText(QFontMetrics(self.detalhe.font()).elidedText(texto, Qt.TextElideMode.ElideMiddle, largura))
+
+    def _pedir_cancelamento(self) -> None:
+        self.botao_cancelar.setEnabled(False)
+        self.botao_cancelar.setText("Cancelando...")
+        self.cancelar.emit()
+
+
+class ListaIgnorados(QListWidget):
+    """Arquivos que não entraram no resultado, cada um com o motivo."""
+
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("listaIgnorados")
+        self.setSelectionMode(QListWidget.SelectionMode.NoSelection)
+        # Cresce com a quantidade de itens até um limite; a partir daí, rola
+        self.setSizeAdjustPolicy(QListWidget.SizeAdjustPolicy.AdjustToContents)
+        self.setMaximumHeight(260)
+        self._ignorados: list[ArquivoIgnorado] = []
+
+    def preencher(self, ignorados: list[ArquivoIgnorado]) -> None:
+        self._ignorados = list(ignorados)
+        self.clear()
+        for ignorado in ignorados:
+            item = QListWidgetItem(f"{ignorado.caminho.name}: {ignorado.motivo}")
+            item.setToolTip(str(ignorado.caminho))
+            self.addItem(item)
+
+    def texto(self) -> str:
+        """Lista com os caminhos completos, para o usuário colar em um e-mail ou planilha."""
+        return "\n".join(f"{i.caminho}: {i.motivo}" for i in self._ignorados)
+
+
+class PainelResultado(QWidget):
+    """Resumo ao final de uma ação: o que foi gerado, onde está e o que ficou de fora."""
+
+    novo = Signal()
+
+    def __init__(self, texto_novo: str):
+        super().__init__()
+        self.destino: Path | None = None
+
+        self.titulo = QLabel()
+        self.titulo.setObjectName("tituloResultado")
+        self.resumo = QLabel()
+        self.resumo.setWordWrap(True)
+        self.caminho = QLabel()
+        self.caminho.setObjectName("subtitulo")
+        self.caminho.setWordWrap(True)
+        self.caminho.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        self.botao_abrir = QPushButton("Abrir arquivo")
+        self.botao_abrir.setObjectName("botaoPrincipal")
+        self.botao_abrir.clicked.connect(lambda: self._acao_sistema(sistema.abrir_arquivo))
+        self.botao_pasta = QPushButton("Mostrar na pasta")
+        self.botao_pasta.clicked.connect(lambda: self._acao_sistema(sistema.mostrar_na_pasta))
+        self.botao_novo = QPushButton(texto_novo)
+        self.botao_novo.clicked.connect(self.novo)
+        botoes = QHBoxLayout()
+        botoes.addWidget(self.botao_abrir)
+        botoes.addWidget(self.botao_pasta)
+        botoes.addStretch()
+        botoes.addWidget(self.botao_novo)
+
+        self.rotulo_ignorados = QLabel()
+        self.rotulo_ignorados.setObjectName("aviso")
+        self.lista_ignorados = ListaIgnorados()
+        self.botao_copiar = QPushButton("Copiar lista")
+        self.botao_copiar.clicked.connect(self._copiar_ignorados)
+        cabecalho_ignorados = QHBoxLayout()
+        cabecalho_ignorados.addWidget(self.rotulo_ignorados, 1)
+        cabecalho_ignorados.addWidget(self.botao_copiar)
+        self.secao_ignorados = QWidget()
+        layout_ignorados = QVBoxLayout(self.secao_ignorados)
+        layout_ignorados.setContentsMargins(0, 10, 0, 0)
+        layout_ignorados.addLayout(cabecalho_ignorados)
+        layout_ignorados.addWidget(self.lista_ignorados)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 24, 0, 0)
+        layout.setSpacing(10)
+        layout.addWidget(self.titulo)
+        layout.addWidget(self.resumo)
+        layout.addWidget(self.caminho)
+        layout.addSpacing(6)
+        layout.addLayout(botoes)
+        layout.addWidget(self.secao_ignorados)
+        layout.addStretch(1)
+
+    def mostrar_sucesso(self, titulo: str, resumo: str, destino: Path, ignorados: list[ArquivoIgnorado]) -> None:
+        self.destino = destino
+        self._preencher(titulo, "sucesso", resumo, ignorados)
+        self.caminho.setText(str(destino))
+        for widget in (self.caminho, self.botao_abrir, self.botao_pasta):
+            widget.show()
+
+    def mostrar_falha(self, titulo: str, mensagem: str, ignorados: list[ArquivoIgnorado]) -> None:
+        self.destino = None
+        self._preencher(titulo, "falha", mensagem, ignorados)
+        for widget in (self.caminho, self.botao_abrir, self.botao_pasta):
+            widget.hide()
+
+    def _preencher(self, titulo: str, estado: str, resumo: str, ignorados: list[ArquivoIgnorado]) -> None:
+        self.titulo.setText(titulo)
+        self.titulo.setProperty("estado", estado)
+        _repintar(self.titulo)
+        self.resumo.setText(resumo)
+        self.lista_ignorados.preencher(ignorados)
+        self.rotulo_ignorados.setText(
+            f"{plural(len(ignorados), 'arquivo não entrou', 'arquivos não entraram')}:"
+        )
+        self.secao_ignorados.setVisible(bool(ignorados))
+
+    def _acao_sistema(self, acao) -> None:
+        try:
+            acao(self.destino)
+        except Exception as erro:
+            mostrar_erro(self, erro, "Não foi possível abrir")
+
+    def _copiar_ignorados(self) -> None:
+        QApplication.clipboard().setText(self.lista_ignorados.texto())
+        self.botao_copiar.setText("Copiado!")
+        QTimer.singleShot(2000, lambda: self.botao_copiar.setText("Copiar lista"))

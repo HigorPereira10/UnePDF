@@ -88,6 +88,23 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     QScrollBar::handle:vertical {{ background: {c.borda}; border-radius: 4px; min-height: 30px; }}
     QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
 
+    #areaSoltar {{ background: {c.lateral}; border: 2px dashed {c.borda}; border-radius: 16px; }}
+    #areaSoltar[arrastando="true"] {{ background: {c.cartao}; border-color: {c.destaque}; }}
+    #tituloSoltar {{ font-size: 15pt; font-weight: 600; }}
+    #aviso {{ color: {c.aviso}; }}
+    #tituloResultado {{ font-size: 15pt; font-weight: 600; }}
+    #tituloResultado[estado="sucesso"] {{ color: {c.sucesso}; }}
+    #tituloResultado[estado="falha"] {{ color: {c.erro}; }}
+    #rotuloCampo {{ color: {c.texto_suave}; font-size: 9pt; font-weight: 600; }}
+
+    QListWidget {{
+        background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 10px; padding: 4px;
+        outline: none;
+    }}
+    QListWidget::item {{ padding: 5px 8px; border-radius: 6px; }}
+    QListWidget::item:hover {{ background: {c.cartao}; }}
+    #listaIgnorados::item {{ color: {c.aviso}; }}
+
     #mensagemErro {{ font-size: 10.5pt; }}
     #iconeErro {{ color: {c.erro}; font-size: 22pt; font-weight: 700; }}
     """

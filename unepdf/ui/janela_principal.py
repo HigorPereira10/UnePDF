@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QCloseEvent, QGuiApplication, QIcon
+from PySide6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QGuiApplication, QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from unepdf import __version__
 from unepdf.constantes import APP_NOME
+from unepdf.ui.componentes import caminhos_locais
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import perguntar
 from unepdf.ui.ferramentas import FERRAMENTAS, TelaFerramenta, buscar
@@ -26,6 +27,7 @@ from unepdf.ui.tema import CORES
 from unepdf.utils.recursos import caminho_recurso
 
 CHAVE_INICIO = "inicio"
+CHAVE_UNIR = "unir"
 
 
 class JanelaPrincipal(QMainWindow):
@@ -58,6 +60,7 @@ class JanelaPrincipal(QMainWindow):
 
         self.abrir(CHAVE_INICIO)
         self._centralizar_na_tela()
+        self.setAcceptDrops(True)
 
     def _montar_barra_lateral(self) -> QFrame:
         barra = QFrame()
@@ -118,6 +121,30 @@ class JanelaPrincipal(QMainWindow):
             tela = self.telas[chave]
         self.pilha.setCurrentWidget(tela)
         self._botoes_por_chave[chave].setChecked(True)
+
+    def _tela_para_arquivos(self) -> TelaFerramenta | None:
+        """Tela que recebe arquivos soltos na janela. Na tela inicial, eles vão para Unir PDFs."""
+        atual = self.pilha.currentWidget()
+        if atual is self.tela_inicial:
+            return None if self.telas.get(CHAVE_UNIR) and self.telas[CHAVE_UNIR].executor.em_execucao else atual
+        if isinstance(atual, TelaFerramenta) and atual.aceita_arquivos and not atual.executor.em_execucao:
+            return atual
+        return None
+
+    def dragEnterEvent(self, evento: QDragEnterEvent) -> None:
+        if caminhos_locais(evento.mimeData()) and self._tela_para_arquivos():
+            evento.acceptProposedAction()
+
+    def dropEvent(self, evento: QDropEvent) -> None:
+        caminhos = caminhos_locais(evento.mimeData())
+        tela = self._tela_para_arquivos()
+        if not caminhos or not tela:
+            return
+        evento.acceptProposedAction()
+        if tela is self.tela_inicial:
+            self.abrir(CHAVE_UNIR)
+            tela = self.telas[CHAVE_UNIR]
+        tela.receber_caminhos(caminhos)
 
     def _centralizar_na_tela(self) -> None:
         tela = self.screen() or QGuiApplication.primaryScreen()

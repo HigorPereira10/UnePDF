@@ -1,6 +1,7 @@
 """Tela-base das ferramentas: cabeçalho com ícone, nome e descrição, e área de conteúdo."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
@@ -17,6 +18,9 @@ if TYPE_CHECKING:
 
 class TelaFerramenta(QWidget):
     """Cada ferramenta herda desta classe e monta a sua interface em `self.corpo`."""
+
+    # Ferramentas que recebem arquivos arrastados para qualquer ponto da janela
+    aceita_arquivos = False
 
     def __init__(self, ferramenta: Ferramenta, contexto: ContextoApp):
         super().__init__()
@@ -54,3 +58,7 @@ class TelaFerramenta(QWidget):
         layout.addLayout(self.corpo, 1)
         # Ocupa a sobra só quando o corpo está vazio: com conteúdo, o corpo (fator 1) tem prioridade
         layout.addStretch(0)
+
+    def receber_caminhos(self, caminhos: list[Path]) -> None:
+        """Recebe arquivos ou pastas soltos na janela. Só é chamado se `aceita_arquivos` for True."""
+        raise NotImplementedError

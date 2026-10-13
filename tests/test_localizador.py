@@ -7,6 +7,7 @@ from unepdf.core.localizador import (
     eh_pasta_saida,
     filtrar_pdfs_selecionados,
     listar_pdfs_da_pasta,
+    montar_selecao,
     ordem_natural,
     pasta_base,
 )
@@ -71,3 +72,48 @@ def test_selecao_manual_em_ordem_natural(tmp_path, criar_pdf):
 
 def test_pasta_base_e_a_do_primeiro_arquivo(tmp_path):
     assert pasta_base([tmp_path / "a.pdf", tmp_path / "b.pdf"]) == tmp_path
+
+
+def test_selecao_de_pasta(tmp_path, criar_pdf):
+    criar_pdf(tmp_path / "2.pdf")
+    criar_pdf(tmp_path / "10.pdf")
+
+    selecao = montar_selecao([tmp_path])
+
+    assert [p.name for p in selecao.arquivos] == ["2.pdf", "10.pdf"]
+    assert selecao.base == selecao.pasta == tmp_path
+
+
+def test_selecao_de_pasta_sem_pdfs(tmp_path, criar_pdf):
+    criar_pdf(tmp_path / "sub" / "a.pdf")
+    with pytest.raises(ErroUnePDF, match="subpastas não entram"):
+        montar_selecao([tmp_path])
+
+
+def test_selecao_de_arquivos_conta_os_descartados(tmp_path, criar_pdf):
+    a = criar_pdf(tmp_path / "a.pdf")
+    texto = tmp_path / "b.txt"
+    texto.write_text("x")
+
+    selecao = montar_selecao([a, texto, a])
+
+    assert selecao.arquivos == [a]
+    assert selecao.base == tmp_path
+    assert selecao.pasta is None
+    assert selecao.descartados == 2
+
+
+def test_selecao_sem_nenhum_pdf_utilizavel(tmp_path, criar_pdf):
+    unificado = criar_pdf(tmp_path / "UNIFICADO" / "u.pdf")
+    with pytest.raises(ErroUnePDF, match="Nenhum dos arquivos"):
+        montar_selecao([unificado])
+
+
+@pytest.mark.parametrize("mistura", ["duas_pastas", "pasta_e_arquivo"])
+def test_selecao_recusa_misturas(tmp_path, criar_pdf, mistura):
+    (tmp_path / "x").mkdir()
+    outro = tmp_path / "y" if mistura == "duas_pastas" else criar_pdf(tmp_path / "a.pdf")
+    if mistura == "duas_pastas":
+        outro.mkdir()
+    with pytest.raises(ErroUnePDF, match="uma pasta por vez"):
+        montar_selecao([tmp_path / "x", outro])
