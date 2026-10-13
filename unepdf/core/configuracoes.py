@@ -8,27 +8,17 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 from dataclasses import asdict, dataclass, fields
-from enum import StrEnum
 from pathlib import Path
 
+from unepdf.constantes import PASTA_SAIDA_PADRAO
 from unepdf.core.erros import ErroUnePDF
+from unepdf.core.nomenclatura import CARACTERES_INVALIDOS, Perfil
 from unepdf.utils.caminhos import pasta_configuracoes
 
 log = logging.getLogger(__name__)
 
 NOME_ARQUIVO = "config.json"
-
-# Caracteres que o Windows não aceita em nomes de pasta
-_CARACTERES_INVALIDOS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
-
-
-class Perfil(StrEnum):
-    """Regra usada para dar nome ao PDF unificado."""
-
-    GENERICO = "generico"
-    NOTAS_FISCAIS = "notas_fiscais"
 
 
 @dataclass
@@ -37,12 +27,12 @@ class Configuracoes:
     pasta_inicial: str = ""
     ultima_pasta: str = ""
     perfil_nomenclatura: Perfil = Perfil.GENERICO
-    pasta_saida: str = "UNIFICADO"
+    pasta_saida: str = PASTA_SAIDA_PADRAO
 
 
 def pasta_saida_valida(nome: str) -> bool:
     """Nome simples de pasta (sem barras nem caracteres proibidos), usado como subpasta de saída."""
-    return bool(nome.strip(" .")) and not _CARACTERES_INVALIDOS.search(nome)
+    return bool(nome.strip(" .")) and not CARACTERES_INVALIDOS.search(nome)
 
 
 def caminho_padrao() -> Path:

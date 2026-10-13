@@ -4,13 +4,13 @@ import pytest
 
 from unepdf.core.configuracoes import (
     Configuracoes,
-    Perfil,
     caminho_padrao,
     carregar,
     pasta_saida_valida,
     salvar,
 )
 from unepdf.core.erros import ErroUnePDF
+from unepdf.core.nomenclatura import Perfil
 
 
 def test_arquivo_ausente_usa_padroes(tmp_path):

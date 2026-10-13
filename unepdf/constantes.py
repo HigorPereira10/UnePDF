@@ -7,3 +7,6 @@ APP_ID = "UnePDF.UnePDF"
 
 # Repositório público, usado no aviso de nova versão e nos links de ajuda
 REPOSITORIO_GITHUB = "HigorPereira10/UnePDF"
+
+# Subpasta criada dentro da pasta de origem para guardar o resultado (o usuário pode trocar)
+PASTA_SAIDA_PADRAO = "UNIFICADO"
