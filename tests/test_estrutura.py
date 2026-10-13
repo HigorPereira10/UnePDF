@@ -43,3 +43,14 @@ def test_fabrica_de_pdfs_dos_testes(tmp_path, criar_pdf):
     assert len(comum.pages) == 3
     assert com_senha.is_encrypted and not com_senha.decrypt("")
     assert so_permissao.is_encrypted and so_permissao.decrypt("")
+
+
+def test_licencas_de_terceiros_citadas_existem():
+    raiz = PACOTE.parent
+    resumo = (raiz / "THIRD_PARTY_LICENSES.md").read_text(encoding="utf-8")
+    citados = set(re.findall(r"\((licenses/[^)]+\.txt)\)", resumo))
+
+    assert citados
+    assert all((raiz / caminho).is_file() for caminho in citados)
+    # Todo texto da pasta precisa estar citado no resumo
+    assert {f"licenses/{p.name}" for p in (raiz / "licenses").iterdir()} == citados
