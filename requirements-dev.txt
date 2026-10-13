@@ -1,4 +1,5 @@
-# Dependências para desenvolver e testar
+# Dependências para desenvolver, testar e gerar o executável
 -r requirements.txt
 pytest>=8.0
 pytest-qt>=4.4
+pyinstaller>=6.0
