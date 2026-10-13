@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build do executável (PyInstaller) e do instalador
+build/
+dist/
+*.spec
+
+# Arquivos temporários da gravação segura
+*.tmp
+
+# PDFs de teste ou gerados localmente não devem ir para o repositório
+*.pdf
+UNIFICADO/
+
+# Logs
+*.log
+
+# Editor e sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

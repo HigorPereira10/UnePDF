@@ -1,0 +1,12 @@
+# Normaliza as quebras de linha dos arquivos de texto
+* text=auto
+
+# Scripts do Windows precisam de CRLF para rodar corretamente no cmd
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.iss text eol=crlf
+
+# Binários: nunca converter
+*.png binary
+*.ico binary
+*.gif binary

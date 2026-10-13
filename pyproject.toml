@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unepdf"
+description = "Ferramentas de PDF para Windows, 100% locais: os arquivos nunca saem do computador."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+dynamic = ["version"]
+# Mantenha em sincronia com requirements.txt
+dependencies = [
+    "pypdf>=6.0",
+    "PySide6>=6.8",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+    "Environment :: Win32 (MS Windows)",
+    "Natural Language :: Portuguese (Brazilian)",
+    "Topic :: Office/Business",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-qt>=4.4"]
+
+[project.urls]
+Homepage = "https://github.com/HigorPereira10/UnePDF"
+Issues = "https://github.com/HigorPereira10/UnePDF/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "unepdf.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["unepdf*"]
+
+[tool.pytest.ini_options]
+# Permite importar o pacote rodando "py -m pytest" a partir da raiz, sem instalar
+pythonpath = ["."]
+testpaths = ["tests"]
+qt_api = "pyside6"
