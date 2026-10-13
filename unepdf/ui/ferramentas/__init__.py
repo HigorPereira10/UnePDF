@@ -10,6 +10,7 @@ from typing import Callable
 
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
+from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfParaImagens, TelaPdfParaTexto
 from unepdf.ui.ferramentas.dividir import TelaDividir
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
 from unepdf.ui.ferramentas.unir import TelaUnir
@@ -66,6 +67,30 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/extrair.svg",
         categoria="Organizar",
         tela=TelaExtrair,
+    ),
+    Ferramenta(
+        chave="imagens_pdf",
+        nome="Imagens para PDF",
+        descricao="Transforme fotos e imagens escaneadas em um PDF, sem perder qualidade.",
+        icone="assets/icones/imagens_pdf.svg",
+        categoria="Converter",
+        tela=TelaImagensParaPdf,
+    ),
+    Ferramenta(
+        chave="pdf_imagens",
+        nome="PDF para imagens",
+        descricao="Salve cada página do PDF como uma imagem PNG ou JPG.",
+        icone="assets/icones/pdf_imagens.svg",
+        categoria="Converter",
+        tela=TelaPdfParaImagens,
+    ),
+    Ferramenta(
+        chave="pdf_texto",
+        nome="PDF para texto",
+        descricao="Copie todo o texto de um PDF para um arquivo .txt.",
+        icone="assets/icones/pdf_texto.svg",
+        categoria="Converter",
+        tela=TelaPdfParaTexto,
     ),
 ]
 

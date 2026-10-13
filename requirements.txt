@@ -2,3 +2,4 @@
 pypdf[crypto]>=6.0
 PySide6-Essentials>=6.8
 pypdfium2>=5.0
+Pillow>=10.0

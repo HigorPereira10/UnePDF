@@ -4,6 +4,7 @@ import pytest
 
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.localizador import (
+    IMAGEM,
     eh_pasta_saida,
     filtrar_pdfs_selecionados,
     listar_pdfs_da_pasta,
@@ -130,3 +131,21 @@ def test_pdf_unico(tmp_path, criar_pdf):
     for invalida in ([], [a, b], [texto], [tmp_path]):
         with pytest.raises(ErroUnePDF, match="único arquivo PDF"):
             pdf_unico(invalida)
+
+
+def test_selecao_de_imagens(tmp_path, criar_pdf):
+    from PIL import Image
+
+    for nome in ("10.jpg", "2.PNG", "3.tiff"):
+        Image.new("RGB", (5, 5)).save(tmp_path / nome)
+    criar_pdf(tmp_path / "doc.pdf")
+
+    selecao = montar_selecao([tmp_path], tipo=IMAGEM)
+
+    assert [p.name for p in selecao.arquivos] == ["2.PNG", "3.tiff", "10.jpg"]
+
+
+def test_pasta_sem_imagens_tem_mensagem_propria(tmp_path, criar_pdf):
+    criar_pdf(tmp_path / "doc.pdf")
+    with pytest.raises(ErroUnePDF, match="Nenhuma imagem encontrada"):
+        montar_selecao([tmp_path], tipo=IMAGEM)

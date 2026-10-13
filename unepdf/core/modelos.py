@@ -22,3 +22,5 @@ class Resultado:
     paginas: int
     substituiu_anterior: bool
     ignorados: list[ArquivoIgnorado] = field(default_factory=list)
+    # Informação extra da ferramenta para o resumo (ex.: "2 páginas não tinham texto")
+    observacao: str = ""

@@ -225,6 +225,8 @@ class TelaArquivoUnico(TelaFerramenta):
     def _ao_processar(self, resultado: Resultado) -> None:
         self._existencia.clear()
         resumo = self.resumo(resultado)
+        if resultado.observacao:
+            resumo += f" {resultado.observacao}"
         if resultado.substituiu_anterior:
             resumo += " O resultado anterior com o mesmo nome foi substituído."
         self.resultado.mostrar_sucesso(

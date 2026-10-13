@@ -1,4 +1,4 @@
-"""Desenho das páginas como imagem (miniaturas e conversão para imagem), usando o PDFium.
+"""Desenho das páginas como imagem e extração de texto, usando o PDFium.
 
 O resultado são bytes crus no formato BGRX (4 bytes por pixel), sem depender de nenhuma
 biblioteca de interface: a camada ui converte para QImage, e a conversão para arquivo usa a Pillow.
@@ -59,4 +59,15 @@ class DocumentoRenderizavel:
                 bitmap = pagina.render(scale=escala, fill_color=(255, 255, 255, 255), prefer_bgrx=True)
                 return ImagemPagina(bytes(bitmap.buffer), bitmap.width, bitmap.height, bitmap.stride)
             finally:
+                pagina.close()
+
+    def extrair_texto(self, indice: int) -> str:
+        """Texto selecionável da página, na ordem de leitura. Vazio em páginas escaneadas."""
+        with _trava_pdfium:
+            pagina = self._documento[indice]
+            texto_pagina = pagina.get_textpage()
+            try:
+                return texto_pagina.get_text_range().replace("\r\n", "\n").replace("\r", "\n")
+            finally:
+                texto_pagina.close()
                 pagina.close()

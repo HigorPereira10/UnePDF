@@ -15,8 +15,14 @@ dezenas ou centenas de documentos que chegam em arquivos separados, como notas f
 sem internet, não envia nada para servidor nenhum e foi feito para aguentar uso diário com muitos
 arquivos, inclusive em pastas de rede.
 
-> O projeto está em desenvolvimento. A primeira ferramenta disponível é **Unir PDFs**, e outras vão
-> chegar nas próximas versões.
+> O projeto está em desenvolvimento ativo.
+
+## Ferramentas
+
+| Categoria | Ferramentas |
+|---|---|
+| Organizar | Unir PDFs, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
+| Converter | Imagens para PDF (sem perda de qualidade), PDF para imagens e PDF para texto |
 
 ## Unir PDFs
 

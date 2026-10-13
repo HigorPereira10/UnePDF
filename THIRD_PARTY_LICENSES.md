@@ -16,6 +16,7 @@ pelo pip.
 | [cffi](https://github.com/python-cffi/cffi) | Dependência do cryptography | MIT-0 |
 | [pycparser](https://github.com/eliben/pycparser) | Dependência do cffi | BSD-3-Clause |
 | [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) e [PDFium](https://pdfium.googlesource.com/pdfium/) | Miniaturas das páginas e conversão de páginas em imagem | BSD-3-Clause ou Apache-2.0 (pypdfium2), BSD-3-Clause (PDFium) e licenças dos componentes do PDFium |
+| [Pillow](https://github.com/python-pillow/Pillow) | Leitura das imagens na conversão para PDF e gravação de PNG e JPG | MIT-CMU |
 | [PySide6 e shiboken6](https://doc.qt.io/qtforpython-6/) (Qt for Python) | Interface gráfica | LGPL-3.0 ([texto](licenses/LGPL-3.0.txt), que complementa a [GPL-3.0](licenses/GPL-3.0.txt)) |
 | [Qt 6](https://www.qt.io/) | Bibliotecas da interface, distribuídas junto com o PySide6 | LGPL-3.0 |
 | [Python](https://www.python.org/) | Interpretador incluído no executável | PSF-2.0 |

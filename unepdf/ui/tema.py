@@ -119,7 +119,21 @@ def folha_de_estilo(c: Cores = CORES) -> str:
         background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 8px; padding: 6px 8px;
     }}
     QSpinBox::up-button, QSpinBox::down-button {{ width: 18px; border: none; background: transparent; }}
-    QRadioButton {{ spacing: 8px; padding: 3px 0; background: transparent; }}
+    QRadioButton, QCheckBox {{ spacing: 8px; padding: 3px 0; background: transparent; }}
+    QCheckBox::indicator {{
+        width: 14px; height: 14px; border-radius: 4px; border: 2px solid {c.texto_suave}; background: {c.lateral};
+    }}
+    QCheckBox::indicator:hover {{ border-color: {c.destaque}; }}
+    QCheckBox::indicator:checked {{ background: {c.destaque}; border-color: {c.destaque}; }}
+    QComboBox {{
+        background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 8px; padding: 6px 10px;
+    }}
+    QComboBox:focus {{ border-color: {c.destaque}; }}
+    QComboBox::drop-down {{ border: none; width: 22px; }}
+    QComboBox QAbstractItemView {{
+        background: {c.cartao}; border: 1px solid {c.borda}; selection-background-color: {c.cartao_hover};
+        outline: none;
+    }}
     QRadioButton::indicator {{
         width: 14px; height: 14px; border-radius: 9px; border: 2px solid {c.texto_suave}; background: {c.lateral};
     }}

@@ -39,6 +39,34 @@ def _criar_pdf(
     return caminho
 
 
+def criar_pdf_com_texto(caminho: Path, textos: list[str]) -> Path:
+    """PDF com uma página por texto, escrito com a fonte padrão Helvetica (aceita acentos).
+
+    Um texto vazio gera uma página sem texto, como uma página escaneada.
+    """
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+
+    escritor = PdfWriter()
+    fonte = escritor._add_object(DictionaryObject({
+        NameObject("/Type"): NameObject("/Font"),
+        NameObject("/Subtype"): NameObject("/Type1"),
+        NameObject("/BaseFont"): NameObject("/Helvetica"),
+        NameObject("/Encoding"): NameObject("/WinAnsiEncoding"),
+    }))
+    for texto in textos:
+        pagina = escritor.add_blank_page(595, 842)
+        pagina[NameObject("/Resources")] = DictionaryObject({
+            NameObject("/Font"): DictionaryObject({NameObject("/F1"): fonte}),
+        })
+        conteudo = DecodedStreamObject()
+        protegido = texto.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        conteudo.set_data(f"BT /F1 14 Tf 72 760 Td ({protegido}) Tj ET".encode("cp1252") if texto else b"")
+        pagina[NameObject("/Contents")] = escritor._add_object(conteudo)
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    escritor.write(caminho)
+    return caminho
+
+
 def numeros_das_paginas(caminho: Path) -> list[int]:
     """Número original (a partir de 1) de cada página de um PDF criado com identificar=True."""
     from pypdf import PdfReader
