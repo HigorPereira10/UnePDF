@@ -22,7 +22,7 @@ arquivos, inclusive em pastas de rede.
 | Categoria | Ferramentas |
 |---|---|
 | Organizar | Unir PDFs, Unir em lote, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
-| Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
+| Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Office para PDF (Word, Excel e PowerPoint), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
 | Segurança | Proteger com senha (AES de 256 bits) e Remover senha |
 | Otimizar | Comprimir PDF |
@@ -126,6 +126,18 @@ dependem dele aparecem com a explicação do que falta.
 Para usar pelo código-fonte, instale o Ghostscript para Windows de 64 bits a partir da
 [página de downloads](https://ghostscript.com/releases/gsdnld.html), com as opções padrão. O UnePDF
 encontra a instalação sozinho, sem nenhuma configuração.
+
+## Microsoft Office ou LibreOffice (para Office para PDF)
+
+A ferramenta Office para PDF usa o Microsoft Office instalado no computador, sem abrir nenhuma janela.
+Os documentos que você estiver editando no Word ou no Excel não são afetados: o UnePDF abre uma
+cópia própria do programa e a fecha no final. Sem o Office, ou para os tipos que ele não tem
+instalados, usa o [LibreOffice](https://www.libreoffice.org/), que é gratuito. Sem nenhum dos dois, a
+ferramenta aparece com a explicação do que falta.
+
+O Excel monta as páginas a partir de uma impressora. Para não depender da impressora padrão (que pode
+estar desligada ou ser de rede), o UnePDF usa a impressora "Microsoft Print to PDF", que vem com o
+Windows, só dentro da cópia do Excel que ele abriu. A impressora padrão do Windows não muda.
 
 ## Onde ficam os dados do app
 

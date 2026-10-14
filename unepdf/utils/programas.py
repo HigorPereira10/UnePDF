@@ -1,4 +1,4 @@
-"""Localização de programas externos opcionais, como o Ghostscript.
+"""Localização de programas externos opcionais, como o Ghostscript, o Office e o LibreOffice.
 
 Eles são programas separados, chamados pelo app: o UnePDF funciona sem eles e só as
 ferramentas que dependem deles ficam desativadas, com a explicação do que falta.
@@ -76,3 +76,55 @@ def candidatos_ghostscript() -> list[Path]:
 def localizar_ghostscript() -> Path | None:
     """Executável de linha de comando do Ghostscript, ou None se não estiver instalado."""
     return next((caminho for caminho in candidatos_ghostscript() if caminho.is_file()), None)
+
+
+def office_instalado(prog_id: str) -> bool:
+    """Indica se um aplicativo do Office (ex.: "Word.Application") está registrado para automação."""
+    try:
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, rf"{prog_id}\CLSID"):
+            return True
+    except (ImportError, OSError):
+        return False
+
+
+def _libreoffice_do_registro() -> list[Path]:
+    try:
+        import winreg
+    except ImportError:
+        return []
+    encontrados = []
+    for raiz in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+        for caminho in (r"SOFTWARE\LibreOffice\UNO\InstallPath", r"SOFTWARE\WOW6432Node\LibreOffice\UNO\InstallPath"):
+            try:
+                with winreg.OpenKey(raiz, caminho) as chave:
+                    encontrados.append(Path(winreg.QueryValueEx(chave, "")[0]) / "soffice.com")
+            except OSError:
+                continue
+    return encontrados
+
+
+def localizar_libreoffice() -> Path | None:
+    """Executável do LibreOffice para conversão sem janela, ou None se não estiver instalado."""
+    pastas_padrao = [
+        Path(base, "LibreOffice", "program", "soffice.com")
+        for base in (os.environ.get(v) for v in ("ProgramFiles", "ProgramFiles(x86)", "ProgramW6432"))
+        if base
+    ]
+    no_path = [Path(c) for c in (shutil.which(n) for n in ("soffice.com", "soffice")) if c]
+    candidatos = [*_libreoffice_do_registro(), *pastas_padrao, *no_path]
+    return next((caminho for caminho in candidatos if caminho.is_file()), None)
+
+
+def impressora_pdf_do_windows() -> tuple[str, str] | None:
+    """Nome e porta da impressora "Microsoft Print to PDF", que vem com o Windows 10 e 11."""
+    try:
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows NT\CurrentVersion\Devices") as chave:
+            valor = winreg.QueryValueEx(chave, "Microsoft Print to PDF")[0]
+    except (ImportError, OSError):
+        return None
+    porta = str(valor).split(",")[-1].strip()
+    return ("Microsoft Print to PDF", porta) if porta else None

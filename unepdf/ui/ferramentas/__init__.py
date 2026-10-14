@@ -8,12 +8,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from unepdf.core import ghostscript
+from unepdf.core import ghostscript, office
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
 from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfA, TelaPdfParaImagens, TelaPdfParaTexto
 from unepdf.ui.ferramentas.dividir import TelaDividir
 from unepdf.ui.ferramentas.editar import TelaMarcaDagua, TelaNumerar
+from unepdf.ui.ferramentas.office_pdf import TelaOfficeParaPdf
 from unepdf.ui.ferramentas.otimizar import TelaComprimir
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
 from unepdf.ui.ferramentas.seguranca import TelaProteger, TelaRemoverSenha
@@ -89,6 +90,15 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/xml_pdf.svg",
         categoria="Converter",
         tela=TelaXmlParaPdf,
+    ),
+    Ferramenta(
+        chave="office_pdf",
+        nome="Office para PDF",
+        descricao="Converta documentos do Word, Excel e PowerPoint para PDF, vários de uma vez.",
+        icone="assets/icones/office_pdf.svg",
+        categoria="Converter",
+        tela=TelaOfficeParaPdf,
+        motivo_indisponivel=office.disponivel,
     ),
     Ferramenta(
         chave="imagens_pdf",

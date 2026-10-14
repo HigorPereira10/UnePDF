@@ -24,6 +24,7 @@ pelo pip.
 | [python-barcode](https://github.com/WhyNotHugo/python-barcode) | Código de barras da chave de acesso | MIT |
 | [phonenumbers](https://github.com/daviddrysdale/python-phonenumbers) | Formatação de telefones nos documentos fiscais | Apache-2.0 |
 | [defusedxml](https://github.com/tiran/defusedxml) | Leitura segura dos XMLs | PSF-2.0 |
+| [pywin32](https://github.com/mhammond/pywin32) | Automação do Microsoft Office na conversão para PDF | PSF-2.0 |
 | [PySide6 e shiboken6](https://doc.qt.io/qtforpython-6/) (Qt for Python) | Interface gráfica | LGPL-3.0 ([texto](licenses/LGPL-3.0.txt), que complementa a [GPL-3.0](licenses/GPL-3.0.txt)) |
 | [Qt 6](https://www.qt.io/) | Bibliotecas da interface, distribuídas junto com o PySide6 | LGPL-3.0 |
 | [Python](https://www.python.org/) | Interpretador incluído no executável | PSF-2.0 |
@@ -63,6 +64,11 @@ sob a AGPL-3.0. Ele é um programa separado: o UnePDF apenas o executa por linha
 incorporar o código dele, então a licença do UnePDF continua sendo a MIT. Quando o Ghostscript for
 distribuído junto com o instalador do UnePDF, o texto da licença dele e o link para o código-fonte
 (<https://ghostscript.com/releases/gsdnld.html>) irão junto.
+
+## Microsoft Office e LibreOffice
+
+A conversão de documentos do Office usa o Microsoft Office ou o LibreOffice já instalados no
+computador. Eles são programas separados, que o UnePDF apenas aciona, e não vão junto com ele.
 
 ## Executável
 

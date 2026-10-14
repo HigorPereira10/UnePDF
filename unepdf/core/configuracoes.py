@@ -35,6 +35,9 @@ class Configuracoes:
     unir_capa: bool = False
     # Opções de XML para PDF, com os nomes dos campos de OpcoesDocumento (texto ou sim/não)
     opcoes_xml: dict = field(default_factory=dict)
+    # Opções de Office para PDF
+    office_pdfa: bool = False
+    office_juntar: bool = False
 
 
 def pasta_saida_valida(nome: str) -> bool:
