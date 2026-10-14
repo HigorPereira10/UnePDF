@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 from unepdf.constantes import PASTA_SAIDA_PADRAO
@@ -33,6 +33,8 @@ class Configuracoes:
     unir_ordem: OrdemArquivos = OrdemArquivos.NOME
     unir_pular_repetidos: bool = True
     unir_capa: bool = False
+    # Opções de XML para PDF, com os nomes dos campos de OpcoesDocumento (texto ou sim/não)
+    opcoes_xml: dict = field(default_factory=dict)
 
 
 def pasta_saida_valida(nome: str) -> bool:
@@ -72,6 +74,10 @@ def carregar(caminho: Path | None = None) -> Configuracoes:
 
 def _validar(nome: str, valor: object) -> object | None:
     """Valor convertido para o tipo do campo, ou None se for inválido."""
+    if nome == "opcoes_xml":
+        if not isinstance(valor, dict):
+            return None
+        return {chave: v for chave, v in valor.items() if isinstance(chave, str) and isinstance(v, (str, bool))}
     if isinstance(getattr(Configuracoes, nome), bool):
         return valor if isinstance(valor, bool) else None
     if not isinstance(valor, str):

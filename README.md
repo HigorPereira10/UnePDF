@@ -22,7 +22,7 @@ arquivos, inclusive em pastas de rede.
 | Categoria | Ferramentas |
 |---|---|
 | Organizar | Unir PDFs, Unir em lote, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
-| Converter | Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
+| Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
 | Segurança | Proteger com senha (AES de 256 bits) e Remover senha |
 | Otimizar | Comprimir PDF |
@@ -73,6 +73,25 @@ C:\Notas\DANFE\0001-EMPRESA EXEMPLO LTDA\012026
 Os tipos reconhecidos são DANFE, DANFSE, DANFCE e DACTE, e a competência fica no formato `MMAAAA`.
 Quando o nome da empresa tem uma barra (como em "S/S"), que o Windows transforma em várias pastas, as
 partes são juntadas com hífen.
+
+## XML para PDF
+
+Gera o documento auxiliar de cada XML no leiaute oficial: DANFE (NF-e), DANFCe (NFC-e), DACTE (CT-e),
+DAMDFE (MDF-e), DANFSe (NFS-e do padrão nacional) e DACCe (carta de correção da NF-e). O tipo de cada
+arquivo é reconhecido pelo conteúdo, então uma pasta pode ter tipos misturados.
+
+- cada PDF recebe o nome do documento, como `DANFE 1234 - EMPRESA EXEMPLO LTDA (XML).pdf`;
+- se a seleção tiver o XML do evento de cancelamento de uma nota, o PDF dela sai marcado como
+  CANCELADA;
+- a carta de correção usa o nome e o endereço do emitente da NF-e, quando o XML da nota está junto;
+- opcionalmente, todos os documentos também são juntados em um único PDF, com um marcador por documento;
+- dá para ajustar a fonte, as casas decimais, a logo do emitente, a posição do canhoto e outros
+  detalhes, e as escolhas ficam salvas;
+- XMLs que não geram PDF (NFS-e no padrão próprio de uma prefeitura, resumos de nota, arquivos
+  corrompidos) aparecem na lista final com o motivo.
+
+O desenho dos documentos é feito pela biblioteca
+[BrazilFiscalReport](https://github.com/Engenere/BrazilFiscalReport).
 
 ## Instalação
 

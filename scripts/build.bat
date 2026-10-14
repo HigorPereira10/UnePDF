@@ -27,6 +27,7 @@ REM --paths . permite importar o pacote unepdf a partir do ponto de entrada unep
     --name "UnePDF" ^
     --icon "assets\icone.ico" ^
     --paths . ^
+    --additional-hooks-dir scripts\hooks ^
     --add-data "assets;assets" ^
     --exclude-module tkinter ^
     --exclude-module pytest ^

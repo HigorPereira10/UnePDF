@@ -19,6 +19,7 @@ from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
 from unepdf.ui.ferramentas.seguranca import TelaProteger, TelaRemoverSenha
 from unepdf.ui.ferramentas.unir import TelaUnir
 from unepdf.ui.ferramentas.unir_lote import TelaUnirLote
+from unepdf.ui.ferramentas.xml_pdf import TelaXmlParaPdf
 
 # Ordem em que as categorias aparecem na tela inicial e na barra lateral
 CATEGORIAS = ("Organizar", "Converter", "Editar", "Segurança", "Otimizar")
@@ -80,6 +81,14 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/extrair.svg",
         categoria="Organizar",
         tela=TelaExtrair,
+    ),
+    Ferramenta(
+        chave="xml_pdf",
+        nome="XML para PDF",
+        descricao="Gere DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção a partir dos XMLs.",
+        icone="assets/icones/xml_pdf.svg",
+        categoria="Converter",
+        tela=TelaXmlParaPdf,
     ),
     Ferramenta(
         chave="imagens_pdf",

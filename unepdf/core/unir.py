@@ -35,10 +35,12 @@ def unir(
     *,
     pular_repetidos: bool = False,
     capa: bool = False,
+    marcadores: list[str] | None = None,
 ) -> Resultado:
     """Gera o PDF unido em `destino` e retorna o resumo da operação.
 
     O progresso conta um passo por arquivo lido e um passo final de gravação.
+    `marcadores` troca o nome do arquivo pelo texto do marcador de cada um, na mesma ordem.
     """
     if not arquivos:
         raise ErroUnePDF("Nenhum PDF encontrado para unir.")
@@ -70,8 +72,9 @@ def unir(
                     continue
                 vistos[assinatura] = caminho
             inicio = len(escritor.pages)
-            escritor.append(leitor, outline_item=caminho.stem)
-            inicios.append((caminho.stem, inicio))
+            titulo = marcadores[posicao - 1] if marcadores else caminho.stem
+            escritor.append(leitor, outline_item=titulo)
+            inicios.append((titulo, inicio))
         except PdfInvalido as erro:
             ignorados.append(ArquivoIgnorado(caminho, str(erro)))
         except Exception:

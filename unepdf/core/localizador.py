@@ -26,6 +26,7 @@ IMAGEM = TipoArquivo(
     "Nenhuma imagem encontrada",
     "Escolha imagens (JPG, PNG, TIFF, BMP ou WEBP)",
 )
+XML = TipoArquivo((".xml",), "Nenhum XML encontrado", "Escolha arquivos XML")
 
 
 def ordem_natural(caminho: Path) -> list:

@@ -17,6 +17,13 @@ pelo pip.
 | [pycparser](https://github.com/eliben/pycparser) | Dependência do cffi | BSD-3-Clause |
 | [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) e [PDFium](https://pdfium.googlesource.com/pdfium/) | Miniaturas das páginas e conversão de páginas em imagem | BSD-3-Clause ou Apache-2.0 (pypdfium2), BSD-3-Clause (PDFium) e licenças dos componentes do PDFium |
 | [Pillow](https://github.com/python-pillow/Pillow) | Leitura das imagens na conversão para PDF e gravação de PNG e JPG | MIT-CMU |
+| [BrazilFiscalReport](https://github.com/Engenere/BrazilFiscalReport) | Desenho do DANFE, DANFCe, DACTE, DAMDFE, DANFSe e DACCe a partir dos XMLs | LGPL-3.0 |
+| [fpdf2](https://github.com/py-pdf/fpdf2) | Geração dos PDFs dos documentos fiscais (dependência da BrazilFiscalReport) | LGPL-3.0 |
+| [fontTools](https://github.com/fonttools/fonttools) | Dependência do fpdf2 | MIT |
+| [qrcode](https://github.com/lincolnloop/python-qrcode) | QR Code dos documentos fiscais | BSD-3-Clause |
+| [python-barcode](https://github.com/WhyNotHugo/python-barcode) | Código de barras da chave de acesso | MIT |
+| [phonenumbers](https://github.com/daviddrysdale/python-phonenumbers) | Formatação de telefones nos documentos fiscais | Apache-2.0 |
+| [defusedxml](https://github.com/tiran/defusedxml) | Leitura segura dos XMLs | PSF-2.0 |
 | [PySide6 e shiboken6](https://doc.qt.io/qtforpython-6/) (Qt for Python) | Interface gráfica | LGPL-3.0 ([texto](licenses/LGPL-3.0.txt), que complementa a [GPL-3.0](licenses/GPL-3.0.txt)) |
 | [Qt 6](https://www.qt.io/) | Bibliotecas da interface, distribuídas junto com o PySide6 | LGPL-3.0 |
 | [Python](https://www.python.org/) | Interpretador incluído no executável | PSF-2.0 |
@@ -32,6 +39,14 @@ pelo pip.
 - Código-fonte do Qt: <https://download.qt.io/official_releases/qt/>
 - O Qt inclui componentes de terceiros com licenças próprias, listados em
   <https://doc.qt.io/qt-6/licenses-used-in-qt.html>.
+
+## BrazilFiscalReport e fpdf2 (LGPL-3.0)
+
+- O UnePDF usa as duas bibliotecas sob a LGPL-3.0, sem nenhuma modificação.
+- No executável, os módulos delas ficam como arquivos `.py` separados (nas pastas `brazilfiscalreport` e
+  `fpdf` dentro de `_internal`), sem compactação, para que possam ser substituídos por versões
+  compatíveis, inclusive modificadas.
+- Código-fonte: <https://github.com/Engenere/BrazilFiscalReport> e <https://github.com/py-pdf/fpdf2>.
 
 ## PDFium
 
