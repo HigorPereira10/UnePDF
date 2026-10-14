@@ -41,6 +41,14 @@ FreeType, ICU, Little CMS, libjpeg-turbo, OpenJPEG, libpng, LLVM libc, simdutf e
 - Portions of this software are copyright © The FreeType Project (www.freetype.org). All rights reserved.
 - This software is based in part on the work of the Independent JPEG Group.
 
+## Ghostscript
+
+A conversão para PDF/A e a compressão forte usam o [Ghostscript](https://ghostscript.com/), distribuído
+sob a AGPL-3.0. Ele é um programa separado: o UnePDF apenas o executa por linha de comando, sem
+incorporar o código dele, então a licença do UnePDF continua sendo a MIT. Quando o Ghostscript for
+distribuído junto com o instalador do UnePDF, o texto da licença dele e o link para o código-fonte
+(<https://ghostscript.com/releases/gsdnld.html>) irão junto.
+
 ## Executável
 
 O executável para Windows é gerado com o [PyInstaller](https://pyinstaller.org/). O carregador do

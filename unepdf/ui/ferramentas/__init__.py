@@ -8,11 +8,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from unepdf.core import ghostscript
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
-from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfParaImagens, TelaPdfParaTexto
+from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfA, TelaPdfParaImagens, TelaPdfParaTexto
 from unepdf.ui.ferramentas.dividir import TelaDividir
 from unepdf.ui.ferramentas.editar import TelaMarcaDagua, TelaNumerar
+from unepdf.ui.ferramentas.otimizar import TelaComprimir
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
 from unepdf.ui.ferramentas.seguranca import TelaProteger, TelaRemoverSenha
 from unepdf.ui.ferramentas.unir import TelaUnir
@@ -95,6 +97,15 @@ FERRAMENTAS: list[Ferramenta] = [
         tela=TelaPdfParaTexto,
     ),
     Ferramenta(
+        chave="pdfa",
+        nome="PDF para PDF/A",
+        descricao="Converta para PDF/A-1b, 2b ou 3b, o formato de arquivamento de longo prazo.",
+        icone="assets/icones/pdfa.svg",
+        categoria="Converter",
+        tela=TelaPdfA,
+        motivo_indisponivel=ghostscript.disponivel,
+    ),
+    Ferramenta(
         chave="marca_dagua",
         nome="Marca d'água",
         descricao="Escreva um texto, como CONFIDENCIAL, sobre todas as páginas.",
@@ -125,6 +136,14 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/remover_senha.svg",
         categoria="Segurança",
         tela=TelaRemoverSenha,
+    ),
+    Ferramenta(
+        chave="comprimir",
+        nome="Comprimir PDF",
+        descricao="Reduza o tamanho do PDF, com ou sem perda de qualidade nas imagens.",
+        icone="assets/icones/comprimir.svg",
+        categoria="Otimizar",
+        tela=TelaComprimir,
     ),
 ]
 

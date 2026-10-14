@@ -32,6 +32,8 @@ from unepdf.core.localizador import IMAGEM, Selecao, montar_selecao
 from unepdf.core.modelos import Resultado
 from unepdf.core.nomenclatura import destino_derivado, limpar_nome, pasta_resultado
 from unepdf.core.paginas import interpretar_paginas
+from unepdf.core.pdfa import FormatoSaida
+from unepdf.core.pdfa import converter as converter_pdfa
 from unepdf.ui.componentes import AreaSoltar, PainelProgresso, PainelResultado
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import mostrar_erro
@@ -411,3 +413,65 @@ class TelaPdfParaTexto(TelaArquivoUnico):
 
     def resumo(self, resultado: Resultado) -> str:
         return f"Texto de {plural(resultado.paginas, 'página', 'páginas')} salvo."
+
+
+# PDF para PDF/A
+
+class TelaPdfA(TelaArquivoUnico):
+    dica_area = "Converta para PDF/A, o formato exigido para arquivamento de longo prazo."
+    texto_botao = "Converter"
+    titulo_progresso = "Convertendo..."
+    titulo_sucesso = "Conversão concluída!"
+    texto_novo = "Converter outro PDF"
+
+    FORMATOS = (
+        (FormatoSaida.PDFA_2B, "PDF/A-2b", "O mais usado hoje e o recomendado na maioria dos casos."),
+        (FormatoSaida.PDFA_1B, "PDF/A-1b", "O mais antigo, para sistemas que só aceitam a primeira versão."),
+        (FormatoSaida.PDFA_3B, "PDF/A-3b", "Igual ao 2b, mas permite anexos dentro do PDF."),
+        (FormatoSaida.PDF_14, "PDF 1.4 comum (sem PDF/A)", "Para sistemas antigos que recusam versões novas do PDF."),
+    )
+
+    def carregar(self, origem: Path) -> InfoPdf:
+        return InfoPdf(len(abrir_pdf_ou_erro(origem).pages))
+
+    def montar_opcoes(self) -> QWidget:
+        self._formatos = QButtonGroup(self)
+        self.opcoes_formato: dict[FormatoSaida, QRadioButton] = {}
+        painel = QWidget()
+        layout = QVBoxLayout(painel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(_rotulo_campo("FORMATO"))
+        for formato, nome, explicacao in self.FORMATOS:
+            opcao = QRadioButton(nome)
+            self._formatos.addButton(opcao)
+            self.opcoes_formato[formato] = opcao
+            layout.addWidget(opcao)
+            layout.addWidget(_ajuda(explicacao))
+            layout.addSpacing(4)
+        self.opcoes_formato[FormatoSaida.PDFA_2B].setChecked(True)
+        self._formatos.buttonClicked.connect(lambda *_: self.atualizar_estado())
+        layout.addSpacing(6)
+        layout.addWidget(_ajuda(
+            "A conversão é feita pelo Ghostscript: as fontes e o perfil de cores passam a ir dentro do "
+            "arquivo, como o padrão exige. Para uma validação oficial, use um validador como o veraPDF."
+        ))
+        layout.addStretch()
+        return painel
+
+    def descrever(self, info: InfoPdf) -> str:
+        return plural(info.paginas, "página", "páginas")
+
+    def _formato(self) -> FormatoSaida:
+        return next(f for f, opcao in self.opcoes_formato.items() if opcao.isChecked())
+
+    def destino(self) -> Path:
+        sufixo = self._formato().value.replace("/", "").replace(" ", "-")  # "PDFA-2b", "PDF-1.4"
+        return destino_derivado(self.origem, sufixo, self.contexto.config.pasta_saida)
+
+    def tarefa(self) -> Tarefa:
+        origem, destino, formato = self.origem, self.destino(), self._formato()
+        return lambda p, c: converter_pdfa(origem, destino, formato, p, c)
+
+    def resumo(self, resultado: Resultado) -> str:
+        paginas = plural(resultado.paginas, "página", "páginas")
+        return f"Arquivo convertido para {self._formato().value}, com {paginas}."

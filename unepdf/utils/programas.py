@@ -1,0 +1,78 @@
+"""Localização de programas externos opcionais, como o Ghostscript.
+
+Eles são programas separados, chamados pelo app: o UnePDF funciona sem eles e só as
+ferramentas que dependem deles ficam desativadas, com a explicação do que falta.
+"""
+from __future__ import annotations
+
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
+
+NOMES_GHOSTSCRIPT = ("gswin64c.exe", "gswin32c.exe")
+
+
+def pasta_do_app() -> Path:
+    """Pasta onde o app está instalado (a do executável) ou a raiz do projeto, rodando pelo código-fonte."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).resolve().parents[2]
+
+
+def _versao(caminho: Path) -> tuple[int, ...]:
+    """Números da versão no caminho (ex.: gs10.08.0 -> (10, 8, 0)), para preferir a mais nova."""
+    encontrada = re.search(r"(\d+(?:\.\d+)+)", str(caminho))
+    return tuple(int(n) for n in encontrada[1].split(".")) if encontrada else ()
+
+
+def _do_registro() -> list[Path]:
+    """Instalações registradas pelo instalador oficial do Ghostscript (versão mais nova primeiro)."""
+    try:
+        import winreg
+    except ImportError:
+        return []
+    encontrados = []
+    for raiz in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+        for empresa in ("GPL Ghostscript", "Artifex Ghostscript"):
+            try:
+                chave = winreg.OpenKey(raiz, rf"SOFTWARE\{empresa}")
+            except OSError:
+                continue
+            with chave:
+                for indice in range(winreg.QueryInfoKey(chave)[0]):
+                    versao = winreg.EnumKey(chave, indice)
+                    try:
+                        with winreg.OpenKey(chave, versao) as subchave:
+                            dll = Path(winreg.QueryValueEx(subchave, "GS_DLL")[0])
+                    except OSError:
+                        continue
+                    encontrados += [dll.parent / nome for nome in NOMES_GHOSTSCRIPT]
+    return sorted(encontrados, key=_versao, reverse=True)
+
+
+def _das_pastas_padrao() -> list[Path]:
+    encontrados = []
+    for variavel in ("ProgramFiles", "ProgramFiles(x86)", "ProgramW6432"):
+        base = os.environ.get(variavel)
+        if base:
+            for nome in NOMES_GHOSTSCRIPT:
+                encontrados += Path(base, "gs").glob(f"gs*/bin/{nome}")
+    return sorted(encontrados, key=_versao, reverse=True)
+
+
+def candidatos_ghostscript() -> list[Path]:
+    """Lugares onde procurar, em ordem de preferência.
+
+    A cópia que vai junto com o app (instalador ou .zip portátil) vem primeiro, para todos os
+    computadores do escritório usarem a mesma versão.
+    """
+    junto_do_app = [pasta_do_app() / "ghostscript" / "bin" / nome for nome in NOMES_GHOSTSCRIPT]
+    no_path = [Path(c) for c in (shutil.which(n) for n in (*NOMES_GHOSTSCRIPT, "gs")) if c]
+    return [*junto_do_app, *_do_registro(), *_das_pastas_padrao(), *no_path]
+
+
+def localizar_ghostscript() -> Path | None:
+    """Executável de linha de comando do Ghostscript, ou None se não estiver instalado."""
+    return next((caminho for caminho in candidatos_ghostscript() if caminho.is_file()), None)

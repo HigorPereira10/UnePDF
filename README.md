@@ -22,9 +22,10 @@ arquivos, inclusive em pastas de rede.
 | Categoria | Ferramentas |
 |---|---|
 | Organizar | Unir PDFs, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
-| Converter | Imagens para PDF (sem perda de qualidade), PDF para imagens e PDF para texto |
+| Converter | Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
 | Segurança | Proteger com senha (AES de 256 bits) e Remover senha |
+| Otimizar | Comprimir PDF |
 
 ## Unir PDFs
 
@@ -81,6 +82,16 @@ Para rodar os testes:
 ```bat
 py -m pytest
 ```
+
+## Ghostscript (opcional)
+
+A conversão para PDF/A e a compressão forte usam o [Ghostscript](https://ghostscript.com/), um programa
+gratuito e separado do UnePDF. Sem ele, todas as outras ferramentas funcionam normalmente; as que
+dependem dele aparecem com a explicação do que falta.
+
+Para usar pelo código-fonte, instale o Ghostscript para Windows de 64 bits a partir da
+[página de downloads](https://ghostscript.com/releases/gsdnld.html), com as opções padrão. O UnePDF
+encontra a instalação sozinho, sem nenhuma configuração.
 
 ## Onde ficam os dados do app
 

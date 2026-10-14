@@ -45,6 +45,7 @@ class TelaArquivoUnico(TelaFerramenta):
         self._pasta_saida_usada = ""
         # Evita consultar o disco (às vezes na rede) a cada tecla digitada nas opções
         self._existencia: dict[Path, bool] = {}
+        self._aviso_era_indisponivel = False
 
         self.area = AreaSoltar("Arraste um PDF para cá", self.dica_area, com_pasta=False, texto_arquivos="Escolher PDF")
         self.area.caminhos_soltos.connect(self.receber_caminhos)
@@ -154,7 +155,7 @@ class TelaArquivoUnico(TelaFerramenta):
             self.receber_caminhos([Path(arquivo)])
 
     def receber_caminhos(self, caminhos: list[Path]) -> None:
-        if self.executor.em_execucao:
+        if self.executor.em_execucao or self._verificar_disponibilidade():
             return
         self.area.mostrar_aviso(None)
         try:
@@ -247,8 +248,22 @@ class TelaArquivoUnico(TelaFerramenta):
         self.area.mostrar_aviso(None)
         self.estados.setCurrentWidget(self.area)
 
+    def _verificar_disponibilidade(self) -> str | None:
+        """Mostra o que falta (ex.: um programa externo) e bloqueia a escolha de arquivos enquanto faltar."""
+        motivo = self.ferramenta.motivo_indisponivel()
+        self.area.botao_arquivos.setEnabled(motivo is None)
+        if motivo:
+            self.limpar()
+            self.area.mostrar_aviso(motivo)
+        elif self.estados.currentWidget() is self.area and self.area.aviso.text() and self._aviso_era_indisponivel:
+            self.area.mostrar_aviso(None)
+        self._aviso_era_indisponivel = motivo is not None
+        return motivo
+
     def showEvent(self, evento: QShowEvent) -> None:
         super().showEvent(evento)
+        # Verificado a cada exibição: o programa que faltava pode ter sido instalado com o app aberto
+        self._verificar_disponibilidade()
         # A subpasta de saída pode ter mudado nas configurações
         if self.origem is not None and self._pasta_saida_usada != self.contexto.config.pasta_saida:
             self._pasta_saida_usada = self.contexto.config.pasta_saida

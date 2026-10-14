@@ -16,6 +16,19 @@ def gravar_com_seguranca(destino: Path, escrever: Callable[[BinaryIO], None]) ->
     continua intacto e nenhum arquivo pela metade fica na pasta.
     Retorna True se um arquivo anterior com o mesmo nome foi substituído.
     """
+
+    def gerar(temporario: Path) -> None:
+        with open(temporario, "wb") as arquivo:
+            escrever(arquivo)
+
+    return gravar_arquivo_gerado(destino, gerar)
+
+
+def gravar_arquivo_gerado(destino: Path, gerar: Callable[[Path], None]) -> bool:
+    """Como gravar_com_seguranca, para quando outro programa grava o arquivo (ex.: o Ghostscript).
+
+    `gerar` recebe o caminho temporário onde o arquivo deve ser criado.
+    """
     try:
         destino.parent.mkdir(parents=True, exist_ok=True)
     except OSError as erro:
@@ -26,8 +39,7 @@ def gravar_com_seguranca(destino: Path, escrever: Callable[[BinaryIO], None]) ->
     substituiu = destino.exists()
     temporario = destino.with_name(destino.name + ".tmp")
     try:
-        with open(temporario, "wb") as arquivo:
-            escrever(arquivo)
+        gerar(temporario)
         os.replace(temporario, destino)
     except PermissionError as erro:
         temporario.unlink(missing_ok=True)
