@@ -13,6 +13,7 @@ from pathlib import Path
 from unepdf.constantes import PASTA_SAIDA_PADRAO
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.gravacao import gravar_com_seguranca
+from unepdf.core.localizador import OrdemArquivos
 from unepdf.core.nomenclatura import CARACTERES_INVALIDOS, Perfil
 from unepdf.utils.caminhos import pasta_configuracoes
 
@@ -28,6 +29,10 @@ class Configuracoes:
     ultima_pasta: str = ""
     perfil_nomenclatura: Perfil = Perfil.GENERICO
     pasta_saida: str = PASTA_SAIDA_PADRAO
+    # Últimas opções usadas em Unir PDFs e Unir em lote
+    unir_ordem: OrdemArquivos = OrdemArquivos.NOME
+    unir_pular_repetidos: bool = True
+    unir_capa: bool = False
 
 
 def pasta_saida_valida(nome: str) -> bool:
@@ -67,11 +72,14 @@ def carregar(caminho: Path | None = None) -> Configuracoes:
 
 def _validar(nome: str, valor: object) -> object | None:
     """Valor convertido para o tipo do campo, ou None se for inválido."""
+    if isinstance(getattr(Configuracoes, nome), bool):
+        return valor if isinstance(valor, bool) else None
     if not isinstance(valor, str):
         return None
-    if nome == "perfil_nomenclatura":
+    enumeracoes = {"perfil_nomenclatura": Perfil, "unir_ordem": OrdemArquivos}
+    if nome in enumeracoes:
         try:
-            return Perfil(valor)
+            return enumeracoes[nome](valor)
         except ValueError:
             return None
     if nome == "pasta_saida":

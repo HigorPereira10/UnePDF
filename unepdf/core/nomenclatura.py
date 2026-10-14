@@ -83,5 +83,5 @@ def pasta_resultado(origem: Path, pasta_saida: str = PASTA_SAIDA_PADRAO) -> Path
 
 
 def destino_derivado(origem: Path, sufixo: str, pasta_saida: str = PASTA_SAIDA_PADRAO, extensao: str = ".pdf") -> Path:
-    """Ex.: C:\\Notas\\contrato.pdf + "protegido" -> C:\\Notas\\UNIFICADO\\contrato - protegido.pdf"""
+    """Ex.: C:\\Notas\\contrato.pdf + "protegido" -> C:\\Notas\\UnePDF\\contrato - protegido.pdf"""
     return pasta_resultado(origem, pasta_saida) / f"{origem.stem} - {sufixo}{extensao}"

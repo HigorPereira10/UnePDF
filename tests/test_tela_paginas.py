@@ -54,7 +54,7 @@ def test_organizar_reordena_gira_e_remove(qtbot, janela, tmp_path, criar_pdf):
     tela.botao_remover.click()
     _processar(qtbot, tela)
 
-    destino = tmp_path / "UNIFICADO" / "a - organizado.pdf"
+    destino = tmp_path / "UnePDF" / "a - organizado.pdf"
     assert tela.resultado.destino == destino
     assert numeros_das_paginas(destino) == [4, 1, 2]
     assert [p.rotation for p in PdfReader(destino).pages] == [0, 90, 0]
@@ -124,7 +124,7 @@ def test_extrair_em_um_pdf(qtbot, janela, tmp_path, criar_pdf):
     qtbot.keyClicks(tela.campo_paginas, "4, 2")
     _processar(qtbot, tela)
 
-    destino = tmp_path / "UNIFICADO" / "a - páginas extraídas.pdf"
+    destino = tmp_path / "UnePDF" / "a - páginas extraídas.pdf"
     assert numeros_das_paginas(destino) == [2, 4]  # sempre na ordem do documento
     assert tela.resultado.resumo.text() == "2 páginas extraídas para um novo PDF."
     assert tela.resultado.botao_abrir.text() == "Abrir arquivo"
@@ -134,10 +134,10 @@ def test_extrair_um_pdf_por_pagina(qtbot, janela, tmp_path, criar_pdf):
     tela = _abrir(qtbot, janela, "extrair", criar_pdf(tmp_path / "a.pdf", paginas=5))
     qtbot.keyClicks(tela.campo_paginas, "1, 5")
     tela.opcao_separadas.click()
-    assert tela.rotulo_destino.text() == str(tmp_path / "UNIFICADO" / "a - páginas extraídas")
+    assert tela.rotulo_destino.text() == str(tmp_path / "UnePDF" / "a - páginas extraídas")
     _processar(qtbot, tela)
 
-    pasta = tmp_path / "UNIFICADO" / "a - páginas extraídas"
+    pasta = tmp_path / "UnePDF" / "a - páginas extraídas"
     assert sorted(p.name for p in pasta.iterdir()) == ["a - página 1.pdf", "a - página 5.pdf"]
     assert tela.resultado.botao_abrir.text() == "Abrir pasta"
 

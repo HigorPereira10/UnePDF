@@ -21,7 +21,7 @@ arquivos, inclusive em pastas de rede.
 
 | Categoria | Ferramentas |
 |---|---|
-| Organizar | Unir PDFs, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
+| Organizar | Unir PDFs, Unir em lote, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
 | Converter | Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
 | Segurança | Proteger com senha (AES de 256 bits) e Remover senha |
@@ -33,17 +33,32 @@ Escolha uma pasta (ou arraste os arquivos para a janela) e o UnePDF gera um úni
 
 - cada arquivo começa em uma página nova e mantém todas as suas páginas;
 - a ordem segue o nome do arquivo, tratando números como números (`2.pdf` vem antes de `10.pdf`);
+  também dá para ordenar pela data de modificação ou arrastar os arquivos na lista;
 - cada arquivo vira um marcador no PDF final, e a maioria dos leitores de PDF já abre com a lista
   de marcadores visível;
 - arquivos vazios, corrompidos ou protegidos por senha são pulados sem interromper o processo, e no
   final o app lista quais foram e o motivo;
 - PDFs com senha só de permissão (os que abrem sem pedir senha) são aceitos normalmente;
 - os arquivos originais nunca são alterados nem apagados;
-- o resultado é gravado em uma subpasta (`UNIFICADO`, por padrão) e substitui o anterior de mesmo nome;
+- o resultado é gravado em uma subpasta (`UnePDF`, por padrão) e substitui o anterior de mesmo nome;
 - se a gravação falhar no meio, o arquivo anterior continua intacto.
+
+Opções:
+
+- **pular arquivos repetidos**: arquivos com o mesmo conteúdo de outro já incluído ficam de fora,
+  mesmo com nomes diferentes (como `nota.pdf` e `nota (1).pdf`);
+- **capa com índice**: o PDF começa com uma página que lista os arquivos e a página onde cada um
+  começa, com link para ela.
 
 Na seleção por pasta entram só os PDFs que estão direto nela: subpastas e a pasta de saída ficam de
 fora, para o resultado nunca entrar na próxima união.
+
+### Unir em lote
+
+Para muitas pastas de uma vez: escolha uma pasta raiz e o UnePDF gera um unificado para cada pasta
+com PDFs que estiver dentro dela, em qualquer nível. Antes de começar dá para desmarcar as pastas que
+não devem entrar. Uma pasta com problema não interrompe as outras, e no final o relatório mostra o
+resultado de cada uma (e pode ser salvo em um arquivo de texto).
 
 ### Nome do arquivo final
 
@@ -52,7 +67,7 @@ Por padrão o nome é `<nome da pasta> - UNIFICADO.pdf`. Nas configurações dá
 
 ```
 C:\Notas\DANFE\0001-EMPRESA EXEMPLO LTDA\012026
-    → UNIFICADO\DANFE - 0001-EMPRESA EXEMPLO LTDA - 012026.pdf
+    → UnePDF\DANFE - 0001-EMPRESA EXEMPLO LTDA - 012026.pdf
 ```
 
 Os tipos reconhecidos são DANFE, DANFSE, DANFCE e DACTE, e a competência fica no formato `MMAAAA`.

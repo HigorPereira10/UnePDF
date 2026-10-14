@@ -29,7 +29,7 @@ def _carregar(qtbot, tela, caminho):
 
 def _unido(tmp_path, criar_pdf):
     originais = [criar_pdf(tmp_path / f"NF {i}.pdf", paginas=i) for i in (1, 2)]
-    return unir(originais, tmp_path / "UNIFICADO" / "Janeiro - UNIFICADO.pdf").destino
+    return unir(originais, tmp_path / "UnePDF" / "Janeiro - UNIFICADO.pdf").destino
 
 
 def test_pdf_com_marcadores_ja_vem_com_essa_opcao(qtbot, tela, tmp_path, criar_pdf):
@@ -40,7 +40,7 @@ def test_pdf_com_marcadores_ja_vem_com_essa_opcao(qtbot, tela, tmp_path, criar_p
     assert tela.opcao_marcadores.isChecked()
     assert "2 marcadores encontrados" in tela.ajuda_marcadores.text()
     # O original já está na pasta de saída: o resultado fica ao lado dele
-    assert tela.rotulo_destino.text() == str(tmp_path / "UNIFICADO" / "Janeiro - UNIFICADO - dividido")
+    assert tela.rotulo_destino.text() == str(tmp_path / "UnePDF" / "Janeiro - UNIFICADO - dividido")
 
 
 def test_pdf_sem_marcadores_comeca_por_intervalos(qtbot, tela, tmp_path, criar_pdf):
@@ -48,7 +48,7 @@ def test_pdf_sem_marcadores_comeca_por_intervalos(qtbot, tela, tmp_path, criar_p
 
     assert tela.opcao_intervalos.isChecked()
     assert not tela.opcao_marcadores.isEnabled()
-    assert tela.rotulo_destino.text() == str(tmp_path / "UNIFICADO" / "a - dividido")
+    assert tela.rotulo_destino.text() == str(tmp_path / "UnePDF" / "a - dividido")
 
 
 def test_intervalo_invalido_desativa_o_botao(qtbot, tela, tmp_path, criar_pdf):
@@ -75,7 +75,7 @@ def test_dividir_por_marcadores_ate_o_resultado(qtbot, tela, tmp_path, criar_pdf
     tela.botao_principal.click()
     qtbot.waitUntil(lambda: not tela.executor.em_execucao, timeout=10_000)
 
-    pasta = tmp_path / "UNIFICADO" / "Janeiro - UNIFICADO - dividido"
+    pasta = tmp_path / "UnePDF" / "Janeiro - UNIFICADO - dividido"
     assert tela.estados.currentWidget() is tela.resultado
     assert tela.resultado.titulo.text() == "PDF dividido!"
     assert tela.resultado.resumo.text() == "2 arquivos criados com 3 páginas no total."
@@ -86,7 +86,7 @@ def test_dividir_por_marcadores_ate_o_resultado(qtbot, tela, tmp_path, criar_pdf
 
 def test_refazer_avisa_que_a_pasta_sera_substituida(qtbot, tela, tmp_path, criar_pdf):
     origem = criar_pdf(tmp_path / "a.pdf", paginas=2)
-    (tmp_path / "UNIFICADO" / "a - dividido").mkdir(parents=True)
+    (tmp_path / "UnePDF" / "a - dividido").mkdir(parents=True)
     _carregar(qtbot, tela, origem)
     assert "será substituído" in tela.aviso_opcoes.text()
 

@@ -10,6 +10,7 @@ from unepdf.core.configuracoes import (
     salvar,
 )
 from unepdf.core.erros import ErroUnePDF
+from unepdf.core.localizador import OrdemArquivos
 from unepdf.core.nomenclatura import Perfil
 
 
@@ -32,6 +33,9 @@ def test_salvar_e_carregar_preserva_valores(tmp_path):
         ultima_pasta=r"C:\Notas\DANFE\0001-EMPRESA EXEMPLO LTDA\012026",
         perfil_nomenclatura=Perfil.NOTAS_FISCAIS,
         pasta_saida="PDF ÚNICO",
+        unir_ordem=OrdemArquivos.DATA,
+        unir_pular_repetidos=False,
+        unir_capa=True,
     )
 
     salvar(original, arquivo)
@@ -48,6 +52,9 @@ def test_valor_invalido_vira_padrao_so_naquele_campo(tmp_path):
             "perfil_nomenclatura": "inexistente",
             "pasta_saida": "a/b",
             "ultima_pasta": 123,
+            "unir_ordem": "aleatoria",
+            "unir_capa": "sim",
+            "unir_pular_repetidos": 1,
             "campo_de_versao_futura": True,
         }),
         encoding="utf-8",

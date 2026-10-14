@@ -19,7 +19,7 @@ def test_lista_apenas_pdfs_da_pasta_e_ignora_subpastas(tmp_path, criar_pdf):
     criar_pdf(tmp_path / "10.pdf")
     criar_pdf(tmp_path / "2.PDF")  # extensão maiúscula também conta
     (tmp_path / "notas.txt").write_text("x")
-    criar_pdf(tmp_path / "UNIFICADO" / "antigo.pdf")
+    criar_pdf(tmp_path / "UnePDF" / "antigo.pdf")
     criar_pdf(tmp_path / "outra" / "x.pdf")
     (tmp_path / "pasta.pdf").mkdir()  # pasta com nome de PDF não é arquivo
 
@@ -35,7 +35,7 @@ def test_ordem_natural():
     assert [p.name for p in ordenados] == ["A.pdf", "b.pdf", "nota 1.pdf", "Nota 2.pdf", "nota 10.pdf", "²x.pdf"]
 
 
-@pytest.mark.parametrize("nome", ["UNIFICADO", "unificado"])
+@pytest.mark.parametrize("nome", ["UnePDF", "unepdf"])
 def test_pasta_de_saida_nao_pode_ser_origem(tmp_path, criar_pdf, nome):
     criar_pdf(tmp_path / nome / "a.pdf")
     with pytest.raises(ErroUnePDF, match="não pode ser usada como origem"):
@@ -47,7 +47,7 @@ def test_pasta_de_saida_personalizada(tmp_path, criar_pdf):
     criar_pdf(tmp_path / "RESULTADO" / "b.pdf")
 
     assert eh_pasta_saida(tmp_path / "Resultado", "RESULTADO")
-    assert not eh_pasta_saida(tmp_path / "UNIFICADO", "RESULTADO")
+    assert not eh_pasta_saida(tmp_path / "UnePDF", "RESULTADO")
     with pytest.raises(ErroUnePDF):
         listar_pdfs_da_pasta(tmp_path / "RESULTADO", "RESULTADO")
 
@@ -59,7 +59,7 @@ def test_pasta_inexistente_vira_erro_amigavel(tmp_path):
 
 def test_selecao_manual_descarta_saida_nao_pdf_e_duplicados(tmp_path, criar_pdf):
     a = criar_pdf(tmp_path / "a.pdf")
-    unificado = criar_pdf(tmp_path / "UNIFICADO" / "u.pdf")
+    unificado = criar_pdf(tmp_path / "UnePDF" / "u.pdf")
     texto = tmp_path / "b.txt"
     texto.write_text("x")
     mesma_com_outra_grafia = tmp_path / "A.PDF"
@@ -106,7 +106,7 @@ def test_selecao_de_arquivos_conta_os_descartados(tmp_path, criar_pdf):
 
 
 def test_selecao_sem_nenhum_pdf_utilizavel(tmp_path, criar_pdf):
-    unificado = criar_pdf(tmp_path / "UNIFICADO" / "u.pdf")
+    unificado = criar_pdf(tmp_path / "UnePDF" / "u.pdf")
     with pytest.raises(ErroUnePDF, match="Nenhum dos arquivos"):
         montar_selecao([unificado])
 

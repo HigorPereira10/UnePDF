@@ -5,13 +5,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QTimer
-from PySide6.QtGui import QShowEvent
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QKeyEvent, QShowEvent
 from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QCheckBox,
+    QComboBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
     QListWidget,
+    QListWidgetItem,
     QPushButton,
     QStackedWidget,
     QVBoxLayout,
@@ -19,7 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from unepdf.core.erros import ErroUnePDF, OperacaoCancelada
-from unepdf.core.localizador import Selecao, montar_selecao
+from unepdf.core.localizador import OrdemArquivos, Selecao, datas_modificacao, montar_selecao, ordenar
 from unepdf.core.modelos import Resultado
 from unepdf.core.nomenclatura import destino_padrao
 from unepdf.core.unir import unir
@@ -37,11 +41,112 @@ if TYPE_CHECKING:
 ATRASO_PROGRESSO_MS = 300
 
 
+ORDEM_MANUAL = "manual"
+
+
 @dataclass
 class _Preparo:
     selecao: Selecao
     destino: Path
     destino_existe: bool
+    datas: dict[Path, float]
+
+
+class OpcoesUniao(QWidget):
+    """Ordem dos arquivos, arquivos repetidos e capa. As escolhas ficam salvas para a próxima vez."""
+
+    alterado = Signal()
+
+    def __init__(self, contexto: ContextoApp, com_manual: bool):
+        super().__init__()
+        self.contexto = contexto
+        config = contexto.config
+
+        self.combo_ordem = QComboBox()
+        self.combo_ordem.addItem("Nome do arquivo", OrdemArquivos.NOME)
+        self.combo_ordem.addItem("Data de modificação (mais antigo primeiro)", OrdemArquivos.DATA)
+        if com_manual:
+            self.combo_ordem.addItem("Manual (arraste na lista)", ORDEM_MANUAL)
+        self.combo_ordem.setCurrentIndex(self.combo_ordem.findData(config.unir_ordem))
+        self.combo_ordem.currentIndexChanged.connect(self._ao_mudar)
+
+        self.check_repetidos = QCheckBox("Pular arquivos repetidos (mesmo conteúdo, ainda que com outro nome)")
+        self.check_repetidos.setChecked(config.unir_pular_repetidos)
+        self.check_repetidos.toggled.connect(self._ao_mudar)
+        self.check_capa = QCheckBox("Começar com uma capa que lista os arquivos e a página de cada um")
+        self.check_capa.setChecked(config.unir_capa)
+        self.check_capa.toggled.connect(self._ao_mudar)
+
+        linha_ordem = QHBoxLayout()
+        linha_ordem.addWidget(QLabel("Ordem:"))
+        linha_ordem.addWidget(self.combo_ordem)
+        linha_ordem.addStretch()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addLayout(linha_ordem)
+        layout.addWidget(self.check_repetidos)
+        layout.addWidget(self.check_capa)
+
+    @property
+    def ordem(self) -> OrdemArquivos | None:
+        """Ordem escolhida, ou None quando é a ordem manual da lista."""
+        dado = self.combo_ordem.currentData()
+        return None if dado == ORDEM_MANUAL else OrdemArquivos(dado)
+
+    @property
+    def pular_repetidos(self) -> bool:
+        return self.check_repetidos.isChecked()
+
+    @property
+    def capa(self) -> bool:
+        return self.check_capa.isChecked()
+
+    def usar_ordem_manual(self) -> None:
+        self.combo_ordem.setCurrentIndex(self.combo_ordem.findData(ORDEM_MANUAL))
+
+    def _ao_mudar(self) -> None:
+        config = self.contexto.config
+        # A ordem manual vale só para a seleção atual; a salva continua sendo a última automática
+        novo = (self.ordem or config.unir_ordem, self.pular_repetidos, self.capa)
+        if novo != (config.unir_ordem, config.unir_pular_repetidos, config.unir_capa):
+            config.unir_ordem, config.unir_pular_repetidos, config.unir_capa = novo
+            self.contexto.salvar_config()
+        self.alterado.emit()
+
+
+class ListaArquivos(QListWidget):
+    """Lista da seleção: reordena arrastando e remove com a tecla Delete."""
+
+    removidos = Signal()
+
+    def __init__(self):
+        super().__init__()
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+
+    def preencher(self, arquivos: list[Path]) -> None:
+        self.clear()
+        for caminho in arquivos:
+            item = QListWidgetItem(caminho.name)
+            item.setData(Qt.ItemDataRole.UserRole, caminho)
+            item.setToolTip(str(caminho))
+            self.addItem(item)
+
+    def arquivos(self) -> list[Path]:
+        return [self.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.count())]
+
+    def remover_selecionados(self) -> None:
+        for item in self.selectedItems():
+            self.takeItem(self.row(item))
+        self.removidos.emit()
+
+    def keyPressEvent(self, evento: QKeyEvent) -> None:
+        if evento.key() == Qt.Key.Key_Delete and self.selectedItems():
+            self.remover_selecionados()
+        else:
+            super().keyPressEvent(evento)
 
 
 class TelaUnir(TelaFerramenta):
@@ -94,8 +199,21 @@ class TelaUnir(TelaFerramenta):
         cabecalho.addLayout(textos, 1)
         cabecalho.addWidget(trocar)
 
-        self.lista_arquivos = QListWidget()
-        self.lista_arquivos.setSelectionMode(QListWidget.SelectionMode.NoSelection)
+        self.lista_arquivos = ListaArquivos()
+        self.opcoes = OpcoesUniao(self.contexto, com_manual=True)
+        self.opcoes.alterado.connect(self._reordenar)
+        # Arrastar um arquivo na lista passa a ordem para manual
+        self.lista_arquivos.model().rowsMoved.connect(lambda *_: self.opcoes.usar_ordem_manual())
+        self.lista_arquivos.removidos.connect(self._atualizar_contagem)
+        self.botao_remover = QPushButton("Remover da lista")
+        self.botao_remover.setEnabled(False)
+        self.botao_remover.clicked.connect(self.lista_arquivos.remover_selecionados)
+        self.lista_arquivos.itemSelectionChanged.connect(
+            lambda: self.botao_remover.setEnabled(bool(self.lista_arquivos.selectedItems()))
+        )
+        linha_opcoes = QHBoxLayout()
+        linha_opcoes.addWidget(self.opcoes, 1)
+        linha_opcoes.addWidget(self.botao_remover, 0, Qt.AlignmentFlag.AlignTop)
 
         rotulo_destino = QLabel("SERÁ SALVO EM")
         rotulo_destino.setObjectName("rotuloCampo")
@@ -118,6 +236,7 @@ class TelaUnir(TelaFerramenta):
         layout.setSpacing(10)
         layout.addLayout(cabecalho)
         layout.addWidget(self.lista_arquivos, 1)
+        layout.addLayout(linha_opcoes)
         layout.addSpacing(4)
         layout.addWidget(rotulo_destino)
         layout.addWidget(self.destino_selecao)
@@ -160,7 +279,8 @@ class TelaUnir(TelaFerramenta):
         def preparar(progresso, cancelamento) -> _Preparo:
             selecao = montar_selecao(caminhos, pasta_saida)
             destino = destino_padrao(selecao.base, perfil, pasta_saida)
-            return _Preparo(selecao, destino, destino.exists())
+            # As datas já ficam prontas para a ordem por data, sem consultar a rede de novo depois
+            return _Preparo(selecao, destino, destino.exists(), datas_modificacao(selecao.arquivos))
 
         self.progresso.iniciar("Lendo os arquivos...", cancelavel=False)
         self._timer_progresso.start(ATRASO_PROGRESSO_MS)
@@ -179,16 +299,17 @@ class TelaUnir(TelaFerramenta):
         else:
             mostrar_erro(self, erro)
 
-    def _mostrar_selecao(self, preparo: _Preparo, aviso: str = "") -> None:
+    def _mostrar_selecao(self, preparo: _Preparo, aviso: str = "", manter_lista: bool = False) -> None:
         self._preparo = preparo
         selecao = preparo.selecao
-        self.resumo_selecao.setText(plural(len(selecao.arquivos), "PDF selecionado", "PDFs selecionados"))
         if selecao.pasta:
             self.origem_selecao.setText(f"Da pasta {selecao.pasta}")
         else:
             self.origem_selecao.setText(f"Arquivos escolhidos em {selecao.base}")
-        self.lista_arquivos.clear()
-        self.lista_arquivos.addItems([p.name for p in selecao.arquivos])
+        if not manter_lista:
+            ordem = self.opcoes.ordem or self.contexto.config.unir_ordem
+            self.lista_arquivos.preencher(ordenar(selecao.arquivos, ordem, preparo.datas))
+        self._atualizar_contagem()
         self.destino_selecao.setText(str(preparo.destino))
 
         avisos = [aviso] if aviso else []
@@ -201,6 +322,16 @@ class TelaUnir(TelaFerramenta):
             avisos.append("Já existe um arquivo com esse nome. Ele será substituído.")
         self.aviso_selecao.setText("\n".join(avisos))
         self.estados.setCurrentWidget(self.painel_selecao)
+
+    def _reordenar(self) -> None:
+        ordem = self.opcoes.ordem
+        if self._preparo and ordem is not None:
+            self.lista_arquivos.preencher(ordenar(self.lista_arquivos.arquivos(), ordem, self._preparo.datas))
+
+    def _atualizar_contagem(self) -> None:
+        quantidade = self.lista_arquivos.count()
+        self.resumo_selecao.setText(plural(quantidade, "PDF selecionado", "PDFs selecionados"))
+        self.botao_unir.setEnabled(quantidade > 0)
 
     def showEvent(self, evento: QShowEvent) -> None:
         super().showEvent(evento)
@@ -220,11 +351,16 @@ class TelaUnir(TelaFerramenta):
     def _unir(self) -> None:
         if not self._preparo or self.executor.em_execucao:
             return
-        arquivos, destino = self._preparo.selecao.arquivos, self._preparo.destino
+        arquivos, destino = self.lista_arquivos.arquivos(), self._preparo.destino
+        if not arquivos:
+            return
+        pular_repetidos, capa = self.opcoes.pular_repetidos, self.opcoes.capa
         self.progresso.iniciar("Unindo PDFs...")
         self.estados.setCurrentWidget(self.progresso)
         self.executar(
-            lambda progresso, cancelamento: unir(arquivos, destino, progresso, cancelamento),
+            lambda progresso, cancelamento: unir(
+                arquivos, destino, progresso, cancelamento, pular_repetidos=pular_repetidos, capa=capa
+            ),
             self._ao_unir,
             self._ao_falhar_uniao,
         )
@@ -251,7 +387,8 @@ class TelaUnir(TelaFerramenta):
 
     def _voltar_para_selecao(self, aviso: str = "") -> None:
         if self._preparo:
-            self._mostrar_selecao(self._preparo, aviso)
+            # A lista mantém a ordem e as remoções que o usuário já fez
+            self._mostrar_selecao(self._preparo, aviso, manter_lista=True)
         else:
             self.limpar()
             self.area.mostrar_aviso(aviso)

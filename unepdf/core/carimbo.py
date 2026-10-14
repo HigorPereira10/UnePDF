@@ -12,7 +12,14 @@ from pathlib import Path
 from typing import Callable
 
 from pypdf import PageObject, PdfWriter
-from pypdf.generic import DecodedStreamObject, DictionaryObject, FloatObject, NameObject, RectangleObject
+from pypdf.generic import (
+    DecodedStreamObject,
+    DictionaryObject,
+    FloatObject,
+    IndirectObject,
+    NameObject,
+    RectangleObject,
+)
 
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.gravacao import gravar_com_seguranca
@@ -73,10 +80,20 @@ def largura_texto(texto: str, tamanho: float) -> float:
     return total * tamanho / 1000
 
 
-def _literal(texto: str) -> str:
+def literal_pdf(texto: str) -> str:
     """Texto pronto para o conteúdo do PDF, com os caracteres especiais protegidos."""
     bruto = texto.encode("cp1252", errors="replace").decode("latin-1")
     return "(" + bruto.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)") + ")"
+
+
+def fonte_padrao(escritor: PdfWriter, nome: str = "/Helvetica") -> IndirectObject:
+    """Fonte padrão do PDF (Helvetica ou Helvetica-Bold), sem nada embutido no arquivo."""
+    return escritor._add_object(DictionaryObject({
+        NameObject("/Type"): NameObject("/Font"),
+        NameObject("/Subtype"): NameObject("/Type1"),
+        NameObject("/BaseFont"): NameObject(nome),
+        NameObject("/Encoding"): NameObject("/WinAnsiEncoding"),
+    }))
 
 
 def _carimbar(
@@ -89,13 +106,7 @@ def _carimbar(
 ) -> Resultado:
     """Sobrepõe a cada página o conteúdo devolvido por `desenhar(indice, total, caixa)`."""
     escritor = PdfWriter(clone_from=abrir_pdf_ou_erro(origem))
-    fonte = escritor._add_object(DictionaryObject({
-        NameObject("/Type"): NameObject("/Font"),
-        NameObject("/Subtype"): NameObject("/Type1"),
-        NameObject("/BaseFont"): NameObject("/Helvetica"),
-        NameObject("/Encoding"): NameObject("/WinAnsiEncoding"),
-    }))
-    recursos = DictionaryObject({NameObject("/Font"): DictionaryObject({NameObject("/FUne"): fonte})})
+    recursos = DictionaryObject({NameObject("/Font"): DictionaryObject({NameObject("/FUne"): fonte_padrao(escritor)})})
     if opacidade is not None:
         recursos[NameObject("/ExtGState")] = DictionaryObject({NameObject("/GSUne"): DictionaryObject({
             NameObject("/ca"): FloatObject(opacidade),
@@ -159,7 +170,7 @@ def aplicar_marca_dagua(
         return (
             f"q /GSUne gs 0.5 0.5 0.5 rg BT /FUne {fonte:.2f} Tf "
             f"{cos:.4f} {sen:.4f} {-sen:.4f} {cos:.4f} {centro_x:.2f} {centro_y:.2f} Tm "
-            f"{-largura_texto(texto, fonte) / 2:.2f} {-fonte * 0.35:.2f} Td {_literal(texto)} Tj ET Q"
+            f"{-largura_texto(texto, fonte) / 2:.2f} {-fonte * 0.35:.2f} Td {literal_pdf(texto)} Tj ET Q"
         )
 
     return _carimbar(origem, destino, desenhar, opacidade, progresso, cancelamento)
@@ -193,6 +204,6 @@ def numerar_paginas(
             "direita": esquerda + largura - MARGEM - largura_t,
         }[horizontal]
         y = base + altura - MARGEM - tamanho if posicao.value.startswith("topo") else base + MARGEM
-        return f"q 0.25 g BT /FUne {tamanho:.2f} Tf {x:.2f} {y:.2f} Td {_literal(texto)} Tj ET Q"
+        return f"q 0.25 g BT /FUne {tamanho:.2f} Tf {x:.2f} {y:.2f} Td {literal_pdf(texto)} Tj ET Q"
 
     return _carimbar(origem, destino, desenhar, None, progresso, cancelamento)

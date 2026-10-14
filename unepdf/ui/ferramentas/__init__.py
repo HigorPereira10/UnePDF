@@ -18,6 +18,7 @@ from unepdf.ui.ferramentas.otimizar import TelaComprimir
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
 from unepdf.ui.ferramentas.seguranca import TelaProteger, TelaRemoverSenha
 from unepdf.ui.ferramentas.unir import TelaUnir
+from unepdf.ui.ferramentas.unir_lote import TelaUnirLote
 
 # Ordem em que as categorias aparecem na tela inicial e na barra lateral
 CATEGORIAS = ("Organizar", "Converter", "Editar", "Segurança", "Otimizar")
@@ -47,6 +48,14 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/unir.svg",
         categoria="Organizar",
         tela=TelaUnir,
+    ),
+    Ferramenta(
+        chave="unir_lote",
+        nome="Unir em lote",
+        descricao="Gere um PDF unificado para cada subpasta de uma pasta, com relatório no final.",
+        icone="assets/icones/unir_lote.svg",
+        categoria="Organizar",
+        tela=TelaUnirLote,
     ),
     Ferramenta(
         chave="dividir",

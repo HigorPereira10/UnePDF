@@ -76,7 +76,7 @@ def test_subpasta_de_saida_valida_e_salva(qtbot, tela, appdata):
 def test_subpasta_de_saida_invalida_nao_e_salva(qtbot, tela):
     qtbot.keyClicks(tela.campo_pasta_saida, "/x")
 
-    assert tela.contexto.config.pasta_saida == "UNIFICADO"
+    assert tela.contexto.config.pasta_saida == "UnePDF"
     assert not tela.erro_pasta_saida.isHidden()
 
 
@@ -101,7 +101,7 @@ def test_restaurar_padroes_mantem_a_ultima_pasta(tela, monkeypatch):
     tela._restaurar_padroes()
 
     assert (config.pasta_saida, config.perfil_nomenclatura, config.ultima_pasta) == (
-        "UNIFICADO", Perfil.GENERICO, r"C:\Notas"
+        "UnePDF", Perfil.GENERICO, r"C:\Notas"
     )
     assert tela.opcao_generico.isChecked()
 

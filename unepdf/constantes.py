@@ -9,4 +9,4 @@ APP_ID = "UnePDF.UnePDF"
 REPOSITORIO_GITHUB = "HigorPereira10/UnePDF"
 
 # Subpasta criada dentro da pasta de origem para guardar o resultado (o usuário pode trocar)
-PASTA_SAIDA_PADRAO = "UNIFICADO"
+PASTA_SAIDA_PADRAO = "UnePDF"

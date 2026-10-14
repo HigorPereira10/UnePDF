@@ -62,7 +62,7 @@ def test_proteger_ate_o_resultado(qtbot, janela, tmp_path, criar_pdf):
     tela.campo_confirmacao.setText("segredo1")
     _processar(qtbot, tela)
 
-    destino = tmp_path / "UNIFICADO" / "a - protegido.pdf"
+    destino = tmp_path / "UnePDF" / "a - protegido.pdf"
     assert tela.resultado.destino == destino
     leitor = PdfReader(destino)
     assert leitor.is_encrypted and leitor.decrypt("segredo1")
@@ -90,7 +90,7 @@ def test_remover_senha_errada_avisa_sem_janela(qtbot, janela, tmp_path, criar_pd
 
     tela.campo_senha.setText("1234")
     _processar(qtbot, tela)
-    assert not PdfReader(tmp_path / "UNIFICADO" / "a - sem senha.pdf").is_encrypted
+    assert not PdfReader(tmp_path / "UnePDF" / "a - sem senha.pdf").is_encrypted
 
 
 def test_remover_senha_de_pdf_com_restricoes_explica_a_senha_do_proprietario(qtbot, janela, tmp_path, criar_pdf):
@@ -115,7 +115,7 @@ def test_marca_dagua(qtbot, janela, tmp_path):
     assert tela.rotulo_opacidade.text() == "40%"
     _processar(qtbot, tela)
 
-    destino = tmp_path / "UNIFICADO" / "a - marca d'água.pdf"
+    destino = tmp_path / "UnePDF" / "a - marca d'água.pdf"
     assert "RASCUNHO" in _texto(destino)
 
 
@@ -132,5 +132,5 @@ def test_numerar(qtbot, janela, tmp_path):
     tela.pular_capa.setChecked(True)
     _processar(qtbot, tela)
 
-    texto = _texto(tmp_path / "UNIFICADO" / "a - numerado.pdf")
+    texto = _texto(tmp_path / "UnePDF" / "a - numerado.pdf")
     assert "2 / 3" in texto and "3 / 3" in texto and "1 / 3" not in texto

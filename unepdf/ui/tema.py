@@ -110,7 +110,23 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     }}
     QListWidget::item {{ padding: 5px 8px; border-radius: 6px; }}
     QListWidget::item:hover {{ background: {c.cartao}; }}
+    QListWidget::item:selected {{ background: {c.cartao_hover}; color: {c.texto}; }}
     #listaIgnorados::item {{ color: {c.aviso}; }}
+    QTreeWidget {{
+        background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 10px; padding: 4px;
+        outline: none;
+    }}
+    QTreeWidget::item {{ padding: 4px 2px; }}
+    QTreeWidget::item:hover {{ background: {c.cartao}; }}
+    QTreeWidget::item:selected {{ background: {c.cartao_hover}; color: {c.texto}; }}
+    QTreeWidget::indicator {{
+        width: 12px; height: 12px; border-radius: 3px; border: 2px solid {c.texto_suave}; background: {c.lateral};
+    }}
+    QTreeWidget::indicator:checked {{ background: {c.destaque}; border-color: {c.destaque}; }}
+    QHeaderView::section {{
+        background: transparent; color: {c.texto_suave}; border: none; border-bottom: 1px solid {c.borda};
+        padding: 4px 6px; font-size: 9pt; font-weight: 600;
+    }}
 
     #secaoConfiguracao {{ background: {c.cartao}; border: 1px solid {c.borda}; border-radius: 14px; }}
     #secaoConfiguracao QLabel {{ background: transparent; }}

@@ -23,7 +23,6 @@ dist/
 
 # PDFs de teste ou gerados localmente não devem ir para o repositório
 *.pdf
-UNIFICADO/
 
 # Logs
 *.log

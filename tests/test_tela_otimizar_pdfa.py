@@ -77,7 +77,7 @@ def test_converter_para_pdfa_1b(qtbot, janela, tmp_path, criar_pdf):
     assert tela.opcoes_formato[pdfa.FormatoSaida.PDFA_2B].isChecked()
 
     tela.opcoes_formato[pdfa.FormatoSaida.PDFA_1B].click()
-    destino = tmp_path / "UNIFICADO" / "a - PDFA-1b.pdf"
+    destino = tmp_path / "UnePDF" / "a - PDFA-1b.pdf"
     assert tela.rotulo_destino.text() == str(destino)
     tela.botao_principal.click()
     _esperar(qtbot, tela)
@@ -104,5 +104,5 @@ def test_comprimir_mostra_quanto_diminuiu(qtbot, janela, tmp_path):
     tela.botao_principal.click()
     _esperar(qtbot, tela)
 
-    assert (tmp_path / "UNIFICADO" / "scan - comprimido.pdf").exists()
+    assert (tmp_path / "UnePDF" / "scan - comprimido.pdf").exists()
     assert "% menor" in tela.resultado.resumo.text()

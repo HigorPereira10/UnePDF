@@ -46,8 +46,8 @@ def test_a_cada_zero_e_erro(tmp_path, criar_pdf):
 
 def test_por_marcadores_devolve_os_arquivos_unidos(tmp_path, criar_pdf):
     originais = [criar_pdf(tmp_path / f"NF {i}.pdf", paginas=i) for i in (1, 2, 3)]
-    unido = unir(originais, tmp_path / "UNIFICADO" / "u.pdf").destino
-    pasta = tmp_path / "UNIFICADO" / "u - dividido"
+    unido = unir(originais, tmp_path / "UnePDF" / "u.pdf").destino
+    pasta = tmp_path / "UnePDF" / "u - dividido"
 
     resultado = dividir.dividir_por_marcadores(unido, pasta)
 

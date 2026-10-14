@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 from unepdf.constantes import PASTA_SAIDA_PADRAO
@@ -30,6 +31,33 @@ IMAGEM = TipoArquivo(
 def ordem_natural(caminho: Path) -> list:
     """Chave de ordenação que trata números como números (2.pdf antes de 10.pdf)."""
     return [int(parte) if parte.isdecimal() else parte.casefold() for parte in re.split(r"(\d+)", caminho.name)]
+
+
+class OrdemArquivos(StrEnum):
+    NOME = "nome"
+    DATA = "data"  # data de modificação, do mais antigo para o mais recente
+
+
+def datas_modificacao(arquivos: list[Path]) -> dict[Path, float]:
+    """Data de modificação de cada arquivo. Arquivos que não puderam ser consultados ficam de fora."""
+    datas = {}
+    for caminho in arquivos:
+        try:
+            datas[caminho] = caminho.stat().st_mtime
+        except OSError:
+            pass
+    return datas
+
+
+def ordenar(arquivos: list[Path], ordem: OrdemArquivos, datas: dict[Path, float] | None = None) -> list[Path]:
+    """Arquivos na ordem escolhida. Na ordem por data, empates seguem o nome e os arquivos
+    sem data conhecida vão para o fim."""
+    por_nome = sorted(arquivos, key=ordem_natural)
+    if OrdemArquivos(ordem) is OrdemArquivos.NOME:
+        return por_nome
+    if datas is None:
+        datas = datas_modificacao(arquivos)
+    return sorted(por_nome, key=lambda caminho: (caminho not in datas, datas.get(caminho, 0.0)))
 
 
 def eh_do_tipo(caminho: Path, tipo: TipoArquivo) -> bool:
