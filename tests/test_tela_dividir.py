@@ -119,7 +119,6 @@ def test_ferramentas_agrupadas_por_categoria(janela):
 
     categorias = [c for c, _ in por_categoria()]
     assert categorias[0] == "Organizar"
-    rotulos_laterais = [r.text() for r in janela.findChildren(QLabel) if r.objectName() == "rotuloSecao"]
-    assert rotulos_laterais == [c.upper() for c in categorias]
+    assert list(janela._grupos) == categorias
     titulos_grade = [r.text() for r in janela.tela_inicial.findChildren(QLabel) if r.objectName() == "tituloCategoria"]
     assert titulos_grade == categorias

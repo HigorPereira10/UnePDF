@@ -85,6 +85,24 @@ def coleta_de_lixo_na_thread_principal(request):
     coletor.encerrar()
 
 
+@pytest.fixture(autouse=True)
+def janelas_modais_reprovam_o_teste(monkeypatch):
+    """Uma janela de erro ou pergunta inesperada travaria a suíte esperando um clique.
+
+    Assim ela reprova o teste na hora, com a mensagem. Testes que esperam uma dessas janelas
+    substituem mostrar_erro ou perguntar no próprio teste.
+    """
+    from PySide6.QtWidgets import QMessageBox
+
+    from unepdf.ui.dialogos import DialogoErro
+
+    def falhar_erro(dialogo):
+        pytest.fail(f"Janela de erro inesperada:\n{dialogo.detalhes}")
+
+    monkeypatch.setattr(DialogoErro, "exec", falhar_erro)
+    monkeypatch.setattr(QMessageBox, "exec", lambda caixa: pytest.fail(f"Pergunta inesperada: {caixa.text()}"))
+
+
 @pytest.fixture
 def criar_pdf():
     """Fixture que devolve a função de criar PDFs, para usar nos testes."""

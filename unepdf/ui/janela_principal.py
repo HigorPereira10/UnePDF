@@ -1,7 +1,7 @@
 """Janela principal: barra lateral de navegação e área com a tela atual."""
 from __future__ import annotations
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QGuiApplication, QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -18,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from unepdf import __version__
 from unepdf.constantes import APP_NOME
-from unepdf.ui.componentes import caminhos_locais
+from unepdf.ui.componentes import GrupoLateral, caminhos_locais
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import perguntar
 from unepdf.ui.ferramentas import FERRAMENTAS, TelaFerramenta, buscar, por_categoria
@@ -53,6 +54,7 @@ class JanelaPrincipal(QMainWindow):
         self._botoes = QButtonGroup(self)
         self._botoes.setExclusive(True)
         self._botoes_por_chave: dict[str, QPushButton] = {}
+        self._grupos: dict[str, GrupoLateral] = {}
 
         central = QWidget()
         layout = QHBoxLayout(central)
@@ -87,19 +89,34 @@ class JanelaPrincipal(QMainWindow):
         versao = QLabel(f"Versão {__version__}")
         versao.setObjectName("versaoApp")
 
+        # A lista de ferramentas rola quando a janela é baixa; logo e configurações ficam sempre visíveis
+        lista = QWidget()
+        lista.setObjectName("listaLateral")
+        layout_lista = QVBoxLayout(lista)
+        layout_lista.setContentsMargins(0, 0, 0, 0)
+        layout_lista.setSpacing(2)
+        layout_lista.addWidget(self._criar_item(CHAVE_INICIO, "Início", "assets/icones/inicio.svg"))
+        layout_lista.addSpacing(6)
+        for categoria, ferramentas in por_categoria():
+            grupo = GrupoLateral(categoria)
+            for ferramenta in ferramentas:
+                grupo.adicionar(self._criar_item(ferramenta.chave, ferramenta.nome, ferramenta.icone))
+            self._grupos[categoria] = grupo
+            layout_lista.addWidget(grupo)
+        layout_lista.addStretch()
+        rolagem = QScrollArea()
+        rolagem.setObjectName("rolagemLateral")
+        rolagem.setWidgetResizable(True)
+        rolagem.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        rolagem.setWidget(lista)
+
         layout = QVBoxLayout(barra)
         layout.setContentsMargins(12, 20, 12, 16)
         layout.setSpacing(2)
         layout.addLayout(marca)
         layout.addSpacing(18)
-        layout.addWidget(self._criar_item(CHAVE_INICIO, "Início", "assets/icones/inicio.svg"))
-        for categoria, ferramentas in por_categoria():
-            rotulo = QLabel(categoria.upper())
-            rotulo.setObjectName("rotuloSecao")
-            layout.addWidget(rotulo)
-            for ferramenta in ferramentas:
-                layout.addWidget(self._criar_item(ferramenta.chave, ferramenta.nome, ferramenta.icone))
-        layout.addStretch()
+        layout.addWidget(rolagem, 1)
+        layout.addSpacing(6)
         layout.addWidget(self._criar_item(CHAVE_CONFIGURACOES, "Configurações", "assets/icones/configuracoes.svg"))
         layout.addSpacing(10)
         layout.addWidget(versao)
@@ -130,6 +147,13 @@ class JanelaPrincipal(QMainWindow):
             tela = self.telas[chave]
         self.pilha.setCurrentWidget(tela)
         self._botoes_por_chave[chave].setChecked(True)
+
+        # Abre o grupo da ferramenta, para o item selecionado nunca ficar escondido
+        categoria = buscar(chave).categoria if chave in self.telas else None
+        for nome, grupo in self._grupos.items():
+            grupo.marcar_ativo(nome == categoria)
+            if nome == categoria:
+                grupo.expandir(True)
 
     def _tela_para_arquivos(self) -> TelaFerramenta | None:
         """Tela que recebe arquivos soltos na janela. Na tela inicial, eles vão para Unir PDFs."""

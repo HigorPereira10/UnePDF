@@ -359,3 +359,54 @@ class PainelResultado(QWidget):
         self.botao_copiar.setText("Copiado!")
         # Ligado ao botão: se o painel for destruído antes, o temporizador é cancelado junto
         QTimer.singleShot(2000, self.botao_copiar, lambda: self.botao_copiar.setText("Copiar lista"))
+
+
+class GrupoLateral(QWidget):
+    """Grupo da barra lateral: um título clicável que mostra ou esconde as ferramentas do grupo."""
+
+    def __init__(self, nome: str):
+        super().__init__()
+        self.nome = nome
+        self.titulo = QPushButton()
+        self.titulo.setObjectName("grupoLateral")
+        self.titulo.setProperty("ativo", False)
+        self.titulo.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.titulo.clicked.connect(lambda: self.expandir(not self.expandido))
+        self._rotulo = QLabel(nome)
+        self._seta = QLabel()
+        for rotulo in (self._rotulo, self._seta):
+            # Os rótulos só desenham: o clique passa direto para o botão
+            rotulo.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        dentro = QHBoxLayout(self.titulo)
+        dentro.setContentsMargins(14, 0, 12, 0)
+        dentro.addWidget(self._rotulo)
+        dentro.addStretch()
+        dentro.addWidget(self._seta)
+
+        self.itens = QWidget()
+        self._layout_itens = QVBoxLayout(self.itens)
+        self._layout_itens.setContentsMargins(10, 0, 0, 4)
+        self._layout_itens.setSpacing(2)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        layout.addWidget(self.titulo)
+        layout.addWidget(self.itens)
+        self.expandir(False)
+
+    @property
+    def expandido(self) -> bool:
+        return not self.itens.isHidden()
+
+    def adicionar(self, item: QWidget) -> None:
+        self._layout_itens.addWidget(item)
+
+    def expandir(self, expandir: bool) -> None:
+        self.itens.setVisible(expandir)
+        self._seta.setText("▾" if expandir else "▸")
+
+    def marcar_ativo(self, ativo: bool) -> None:
+        """Destaca o título quando a ferramenta aberta pertence a este grupo."""
+        self.titulo.setProperty("ativo", ativo)
+        _repintar(self.titulo)

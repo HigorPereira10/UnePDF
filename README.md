@@ -23,6 +23,8 @@ arquivos, inclusive em pastas de rede.
 |---|---|
 | Organizar | Unir PDFs, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
 | Converter | Imagens para PDF (sem perda de qualidade), PDF para imagens e PDF para texto |
+| Editar | Marca d'água e Numerar páginas |
+| Segurança | Proteger com senha (AES de 256 bits) e Remover senha |
 
 ## Unir PDFs
 

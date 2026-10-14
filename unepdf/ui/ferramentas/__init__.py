@@ -12,7 +12,9 @@ from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
 from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfParaImagens, TelaPdfParaTexto
 from unepdf.ui.ferramentas.dividir import TelaDividir
+from unepdf.ui.ferramentas.editar import TelaMarcaDagua, TelaNumerar
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
+from unepdf.ui.ferramentas.seguranca import TelaProteger, TelaRemoverSenha
 from unepdf.ui.ferramentas.unir import TelaUnir
 
 # Ordem em que as categorias aparecem na tela inicial e na barra lateral
@@ -91,6 +93,38 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/pdf_texto.svg",
         categoria="Converter",
         tela=TelaPdfParaTexto,
+    ),
+    Ferramenta(
+        chave="marca_dagua",
+        nome="Marca d'água",
+        descricao="Escreva um texto, como CONFIDENCIAL, sobre todas as páginas.",
+        icone="assets/icones/marca_dagua.svg",
+        categoria="Editar",
+        tela=TelaMarcaDagua,
+    ),
+    Ferramenta(
+        chave="numerar",
+        nome="Numerar páginas",
+        descricao="Coloque o número em cada página, no rodapé ou no topo.",
+        icone="assets/icones/numerar.svg",
+        categoria="Editar",
+        tela=TelaNumerar,
+    ),
+    Ferramenta(
+        chave="proteger",
+        nome="Proteger com senha",
+        descricao="Crie uma cópia do PDF que só abre com senha.",
+        icone="assets/icones/proteger.svg",
+        categoria="Segurança",
+        tela=TelaProteger,
+    ),
+    Ferramenta(
+        chave="remover_senha",
+        nome="Remover senha",
+        descricao="Crie uma cópia sem senha de um PDF protegido, informando a senha.",
+        icone="assets/icones/remover_senha.svg",
+        categoria="Segurança",
+        tela=TelaRemoverSenha,
     ),
 ]
 

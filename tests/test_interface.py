@@ -166,3 +166,26 @@ def test_coleta_de_lixo_automatica_desligada_durante_o_app():
 
     # O coletor da thread principal (ligado no conftest, como no app) assume a coleta
     assert not gc.isenabled()
+
+
+def test_grupos_da_barra_lateral_comecam_fechados_e_abrem_ao_clicar(qtbot, janela):
+    grupo = janela._grupos["Organizar"]
+    assert not grupo.expandido
+    assert not janela._botoes_por_chave["unir"].isVisible()
+
+    qtbot.mouseClick(grupo.titulo, Qt.MouseButton.LeftButton)
+    assert grupo.expandido and janela._botoes_por_chave["unir"].isVisible()
+
+    qtbot.mouseClick(grupo.titulo, Qt.MouseButton.LeftButton)
+    assert not grupo.expandido
+
+
+def test_abrir_ferramenta_abre_e_destaca_o_grupo_dela(janela):
+    janela.abrir("pdf_texto")
+
+    assert janela._grupos["Converter"].expandido
+    assert janela._grupos["Converter"].titulo.property("ativo") is True
+    assert janela._grupos["Organizar"].titulo.property("ativo") is False
+
+    janela.abrir("inicio")
+    assert janela._grupos["Converter"].titulo.property("ativo") is False

@@ -43,6 +43,7 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     QToolTip {{ background: {c.cartao}; color: {c.texto}; border: 1px solid {c.borda}; padding: 6px; }}
 
     #barraLateral {{ background: {c.lateral}; border-right: 1px solid {c.borda}; }}
+    #rolagemLateral, #listaLateral {{ background: transparent; }}
     #nomeApp {{ font-size: 17pt; font-weight: 600; }}
     #itemLateral {{
         text-align: left; padding: 10px 14px; border: none; border-radius: 8px;
@@ -50,7 +51,12 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     }}
     #itemLateral:hover {{ background: {c.cartao}; color: {c.texto}; }}
     #itemLateral:checked {{ background: {c.cartao_hover}; color: {c.texto}; font-weight: 600; }}
-    #rotuloSecao {{ color: {c.texto_desativado}; font-size: 8.5pt; font-weight: 600; padding: 12px 14px 4px; }}
+    #grupoLateral {{
+        min-height: 34px; border: none; border-radius: 8px; background: transparent; text-align: left;
+    }}
+    #grupoLateral:hover {{ background: {c.cartao}; }}
+    #grupoLateral QLabel {{ color: {c.texto_suave}; font-size: 10.5pt; font-weight: 600; background: transparent; }}
+    #grupoLateral[ativo="true"] QLabel {{ color: {c.texto}; }}
     #versaoApp {{ color: {c.texto_desativado}; font-size: 8.5pt; }}
 
     #titulo {{ font-size: 20pt; font-weight: 600; }}
@@ -125,6 +131,11 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     }}
     QCheckBox::indicator:hover {{ border-color: {c.destaque}; }}
     QCheckBox::indicator:checked {{ background: {c.destaque}; border-color: {c.destaque}; }}
+    QSlider::groove:horizontal {{ height: 6px; background: {c.cartao}; border-radius: 3px; }}
+    QSlider::sub-page:horizontal {{ background: {DEGRADE}; border-radius: 3px; }}
+    QSlider::handle:horizontal {{
+        width: 16px; height: 16px; margin: -6px 0; border-radius: 8px; background: {c.texto};
+    }}
     QComboBox {{
         background: {c.lateral}; border: 1px solid {c.borda}; border-radius: 8px; padding: 6px 10px;
     }}
