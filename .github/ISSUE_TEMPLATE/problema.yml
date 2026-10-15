@@ -1,0 +1,38 @@
+name: Problema
+description: Algo não funcionou como esperado
+labels: ["problema"]
+body:
+  - type: markdown
+    attributes:
+      value: "Obrigado por avisar! **Não anexe documentos reais** (notas, contratos, certificados): use arquivos de exemplo."
+  - type: input
+    id: versao
+    attributes:
+      label: Versão do UnePDF
+      description: Aparece no rodapé da barra lateral.
+      placeholder: "2.0.0"
+    validations:
+      required: true
+  - type: input
+    id: ferramenta
+    attributes:
+      label: Ferramenta
+      placeholder: "Unir PDFs, XML para PDF..."
+  - type: textarea
+    id: descricao
+    attributes:
+      label: O que aconteceu
+      description: O que você fez, o que esperava e o que aconteceu.
+    validations:
+      required: true
+  - type: textarea
+    id: detalhes
+    attributes:
+      label: Detalhes do erro
+      description: Se apareceu uma mensagem de erro, cole aqui o texto do botão "Copiar detalhes do erro".
+      render: text
+  - type: dropdown
+    id: windows
+    attributes:
+      label: Windows
+      options: ["Windows 11", "Windows 10"]

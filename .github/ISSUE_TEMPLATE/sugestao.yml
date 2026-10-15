@@ -1,0 +1,11 @@
+name: Sugestão
+description: Uma ideia de ferramenta ou de melhoria
+labels: ["sugestão"]
+body:
+  - type: textarea
+    id: ideia
+    attributes:
+      label: Qual é a ideia
+      description: Conte o que gostaria que o UnePDF fizesse e em que situação do dia a dia isso ajudaria.
+    validations:
+      required: true
