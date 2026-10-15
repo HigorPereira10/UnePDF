@@ -1,4 +1,4 @@
-"""Localização de programas externos opcionais, como o Ghostscript, o Office e o LibreOffice.
+"""Localização de programas externos opcionais: Ghostscript, Tesseract, Office e LibreOffice.
 
 Eles são programas separados, chamados pelo app: o UnePDF funciona sem eles e só as
 ferramentas que dependem deles ficam desativadas, com a explicação do que falta.
@@ -128,3 +128,32 @@ def impressora_pdf_do_windows() -> tuple[str, str] | None:
         return None
     porta = str(valor).split(",")[-1].strip()
     return ("Microsoft Print to PDF", porta) if porta else None
+
+
+def candidatos_tesseract() -> list[Path]:
+    """Lugares onde procurar o Tesseract, com a cópia que vai junto com o app primeiro."""
+    candidatos = [pasta_do_app() / "tesseract" / "tesseract.exe"]
+    try:
+        import winreg
+
+        for raiz in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+            try:
+                with winreg.OpenKey(raiz, r"SOFTWARE\Tesseract-OCR") as chave:
+                    candidatos.append(Path(winreg.QueryValueEx(chave, "InstallDir")[0]) / "tesseract.exe")
+            except OSError:
+                continue
+    except ImportError:
+        pass
+    for variavel in ("ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "LOCALAPPDATA"):
+        base = os.environ.get(variavel)
+        if base:
+            subpasta = Path(base, "Programs") if variavel == "LOCALAPPDATA" else Path(base)
+            candidatos.append(subpasta / "Tesseract-OCR" / "tesseract.exe")
+    if no_path := shutil.which("tesseract"):
+        candidatos.append(Path(no_path))
+    return candidatos
+
+
+def localizar_tesseract() -> Path | None:
+    """Executável do Tesseract (OCR), ou None se não estiver instalado."""
+    return next((caminho for caminho in candidatos_tesseract() if caminho.is_file()), None)

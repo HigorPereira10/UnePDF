@@ -106,7 +106,14 @@ def test_pdf_para_imagens_so_algumas_paginas_valida_o_texto(qtbot, janela, tmp_p
 
 # PDF para texto
 
-def test_pdf_para_texto(qtbot, janela, tmp_path):
+@pytest.fixture
+def sem_tesseract(monkeypatch):
+    from unepdf.core import ocr
+
+    monkeypatch.setattr(ocr, "localizar_tesseract", lambda: None)
+
+
+def test_pdf_para_texto(qtbot, janela, tmp_path, sem_tesseract):
     origem = criar_pdf_com_texto(tmp_path / "contrato.pdf", ["Cláusula única", ""])
     tela = _abrir(qtbot, janela, "pdf_texto", [origem])
     assert tela.rotulo_destino.text() == str(tmp_path / "UnePDF" / "contrato - texto.txt")
@@ -119,7 +126,7 @@ def test_pdf_para_texto(qtbot, janela, tmp_path):
     assert "1 página(s) não tinham texto" in tela.resultado.resumo.text()
 
 
-def test_pdf_escaneado_mostra_explicacao(qtbot, janela, tmp_path, monkeypatch):
+def test_pdf_escaneado_mostra_explicacao(qtbot, janela, tmp_path, monkeypatch, sem_tesseract):
     from unepdf.ui.ferramentas import arquivo_unico
 
     mostrados = []

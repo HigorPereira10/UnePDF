@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from unepdf.core import ocr
 from unepdf.core.converter import FormatoImagem, pdf_para_imagens, pdf_para_texto
 from unepdf.core.erros import ErroUnePDF, OperacaoCancelada
 from unepdf.core.imagens import TamanhoPagina, imagens_para_pdf
@@ -389,17 +390,33 @@ class TelaPdfParaTexto(TelaArquivoUnico):
     def montar_opcoes(self) -> QWidget:
         self.marcar_paginas = QCheckBox("Marcar o início de cada página no texto")
         self.marcar_paginas.setChecked(True)
+        self.usar_ocr = QCheckBox("Ler as páginas escaneadas com OCR")
+        self.ajuda_ocr = _ajuda()
         painel = QWidget()
         layout = QVBoxLayout(painel)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(_rotulo_campo("OPÇÕES"))
         layout.addWidget(self.marcar_paginas)
-        layout.addWidget(_ajuda(
-            "Só é extraído o texto que pode ser selecionado no PDF. PDFs escaneados guardam apenas a "
-            "imagem das páginas e não têm texto para extrair."
-        ))
+        layout.addWidget(self.usar_ocr)
+        layout.addWidget(self.ajuda_ocr)
         layout.addStretch()
         return painel
+
+    def preencher_opcoes(self, info: InfoPdf) -> None:
+        # Conferido a cada PDF: o Tesseract pode ter sido instalado com o app aberto
+        motivo = ocr.disponivel()
+        self.usar_ocr.setEnabled(motivo is None)
+        self.usar_ocr.setChecked(motivo is None)
+        if motivo:
+            self.ajuda_ocr.setText(
+                "PDFs escaneados guardam só a imagem das páginas. Para ler o texto delas, instale o Tesseract "
+                "(gratuito, github.com/UB-Mannheim/tesseract/wiki) com o idioma português."
+            )
+        else:
+            self.ajuda_ocr.setText(
+                "As páginas sem texto selecionável são lidas pelo reconhecimento de texto, que é mais lento "
+                "e pode errar letras em escaneamentos ruins."
+            )
 
     def descrever(self, info: InfoPdf) -> str:
         return plural(info.paginas, "página", "páginas")
@@ -409,7 +426,8 @@ class TelaPdfParaTexto(TelaArquivoUnico):
 
     def tarefa(self) -> Tarefa:
         origem, destino, separar = self.origem, self.destino(), self.marcar_paginas.isChecked()
-        return lambda p, c: pdf_para_texto(origem, destino, separar, p, c)
+        usar_ocr = self.usar_ocr.isChecked() and self.usar_ocr.isEnabled()
+        return lambda p, c: pdf_para_texto(origem, destino, separar, p, c, usar_ocr=usar_ocr)
 
     def resumo(self, resultado: Resultado) -> str:
         return f"Texto de {plural(resultado.paginas, 'página', 'páginas')} salvo."

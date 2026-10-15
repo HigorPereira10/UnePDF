@@ -38,6 +38,7 @@ class Configuracoes:
     # Opções de Office para PDF
     office_pdfa: bool = False
     office_juntar: bool = False
+    ocr_juntar: bool = False
 
 
 def pasta_saida_valida(nome: str) -> bool:

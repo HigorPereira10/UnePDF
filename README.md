@@ -25,7 +25,7 @@ arquivos, inclusive em pastas de rede.
 | Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Office para PDF (Word, Excel e PowerPoint), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
 | Segurança | Proteger com senha (AES de 256 bits) e Remover senha |
-| Otimizar | Comprimir PDF |
+| Otimizar | Comprimir PDF e OCR (deixa PDFs escaneados e imagens pesquisáveis) |
 
 ## Unir PDFs
 
@@ -126,6 +126,17 @@ dependem dele aparecem com a explicação do que falta.
 Para usar pelo código-fonte, instale o Ghostscript para Windows de 64 bits a partir da
 [página de downloads](https://ghostscript.com/releases/gsdnld.html), com as opções padrão. O UnePDF
 encontra a instalação sozinho, sem nenhuma configuração.
+
+## Tesseract (opcional, para o OCR)
+
+O OCR usa o [Tesseract](https://github.com/tesseract-ocr/tesseract), um programa gratuito e separado do
+UnePDF. O texto reconhecido entra como uma camada invisível por cima da imagem de cada página, então a
+aparência e o tamanho do arquivo quase não mudam. Páginas que já têm texto ficam como estão. Com o
+Tesseract instalado, o PDF para texto também passa a ler as páginas escaneadas.
+
+Para usar pelo código-fonte, instale a versão para Windows de 64 bits da
+[UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki) e, na tela de componentes, marque
+**Portuguese** em "Additional language data". O UnePDF encontra a instalação sozinho.
 
 ## Microsoft Office ou LibreOffice (para Office para PDF)
 

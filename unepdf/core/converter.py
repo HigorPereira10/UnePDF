@@ -1,6 +1,7 @@
 """Conversão de PDF em outros formatos: imagens (PNG ou JPG) e texto."""
 from __future__ import annotations
 
+import tempfile
 from enum import StrEnum
 from pathlib import Path
 
@@ -71,27 +72,45 @@ def pdf_para_texto(
     separar_paginas: bool = True,
     progresso: CallbackProgresso | None = None,
     cancelamento: Cancelamento | None = None,
+    usar_ocr: bool = False,
 ) -> Resultado:
     """Grava o texto selecionável do PDF em um arquivo .txt (UTF-8).
 
-    PDFs escaneados não têm texto, só a imagem das páginas: nesse caso nada é gravado e o
-    usuário recebe uma explicação. Páginas sem texto num PDF misto viram uma observação no resumo.
+    PDFs escaneados não têm texto, só a imagem das páginas: com `usar_ocr`, essas páginas são lidas
+    pelo Tesseract; sem ele, nada é gravado e o usuário recebe uma explicação. Páginas sem texto num
+    PDF misto viram uma observação no resumo.
     """
+    from unepdf.core import ocr
+
     _, dados = ler_pdf_ou_erro(origem)
+    idiomas_ocr = None
+    if usar_ocr:
+        executavel = ocr.localizar_tesseract()
+        idiomas_ocr = ocr.idiomas(executavel) if executavel else None
+        if not idiomas_ocr:
+            raise ErroUnePDF(ocr.disponivel() or ocr.MENSAGEM_AUSENTE)
     partes = []
-    sem_texto = 0
-    with DocumentoRenderizavel(dados) as documento:
+    sem_texto = lidas_com_ocr = 0
+    with DocumentoRenderizavel(dados) as documento, tempfile.TemporaryDirectory(
+        prefix="unepdf-texto-", ignore_cleanup_errors=True
+    ) as temporaria:
         for indice in range(documento.total):
             if cancelamento:
                 cancelamento.verificar()
             if progresso:
                 progresso(indice + 1, documento.total + 1, f"Página {indice + 1}")
             texto = documento.extrair_texto(indice).strip()
+            if idiomas_ocr and not ocr.tem_texto(documento, indice):
+                imagem = ocr._imagem_da_pagina(documento, indice, Path(temporaria) / f"{indice}.png")
+                texto = ocr.reconhecer_texto(imagem, idiomas_ocr, cancelamento)
+                lidas_com_ocr += 1
             if not texto:
                 sem_texto += 1
             partes.append(f"===== Página {indice + 1} =====\n\n{texto}" if separar_paginas else texto)
         total = documento.total
 
+    if sem_texto == total and idiomas_ocr:
+        raise ErroUnePDF("Nenhum texto foi reconhecido neste PDF, nem com o OCR.")
     if sem_texto == total:
         raise ErroUnePDF(
             "Nenhum texto encontrado neste PDF.\n\n"
@@ -103,5 +122,12 @@ def pdf_para_texto(
         progresso(total + 1, total + 1, f"Gravando {destino.name}")
     # Com a marca BOM, o Bloco de Notas e o Excel antigos reconhecem os acentos corretamente
     substituiu = gravar_com_seguranca(destino, lambda arquivo: arquivo.write(conteudo.encode("utf-8-sig")))
-    observacao = f"{sem_texto} página(s) não tinham texto (provavelmente escaneadas)." if sem_texto else ""
+    observacoes = []
+    if lidas_com_ocr:
+        observacoes.append(f"{lidas_com_ocr} página(s) lidas com OCR; confira nomes e números, que podem ter erros.")
+    if sem_texto and idiomas_ocr:
+        observacoes.append(f"Em {sem_texto} página(s) nada foi reconhecido.")
+    elif sem_texto:
+        observacoes.append(f"{sem_texto} página(s) não tinham texto (provavelmente escaneadas).")
+    observacao = " ".join(observacoes)
     return Resultado(destino, 1, total, substituiu, observacao=observacao)

@@ -8,12 +8,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from unepdf.core import ghostscript, office
+from unepdf.core import ghostscript, ocr, office
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
 from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfA, TelaPdfParaImagens, TelaPdfParaTexto
 from unepdf.ui.ferramentas.dividir import TelaDividir
 from unepdf.ui.ferramentas.editar import TelaMarcaDagua, TelaNumerar
+from unepdf.ui.ferramentas.ocr_pdf import TelaOcr
 from unepdf.ui.ferramentas.office_pdf import TelaOfficeParaPdf
 from unepdf.ui.ferramentas.otimizar import TelaComprimir
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
@@ -172,6 +173,15 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/comprimir.svg",
         categoria="Otimizar",
         tela=TelaComprimir,
+    ),
+    Ferramenta(
+        chave="ocr",
+        nome="OCR",
+        descricao="Deixe PDFs escaneados e imagens pesquisáveis, com o texto selecionável e copiável.",
+        icone="assets/icones/ocr.svg",
+        categoria="Otimizar",
+        tela=TelaOcr,
+        motivo_indisponivel=ocr.disponivel,
     ),
 ]
 

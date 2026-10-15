@@ -65,6 +65,13 @@ incorporar o código dele, então a licença do UnePDF continua sendo a MIT. Qua
 distribuído junto com o instalador do UnePDF, o texto da licença dele e o link para o código-fonte
 (<https://ghostscript.com/releases/gsdnld.html>) irão junto.
 
+## Tesseract
+
+O OCR usa o [Tesseract](https://github.com/tesseract-ocr/tesseract), distribuído sob a Apache-2.0, com os
+dados de idioma do projeto [tessdata](https://github.com/tesseract-ocr/tessdata) (também Apache-2.0). Ele é
+um programa separado, que o UnePDF executa por linha de comando. Quando for distribuído junto com o
+instalador do UnePDF, o texto da licença dele irá junto.
+
 ## Microsoft Office e LibreOffice
 
 A conversão de documentos do Office usa o Microsoft Office ou o LibreOffice já instalados no
