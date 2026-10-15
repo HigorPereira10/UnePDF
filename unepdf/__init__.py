@@ -8,6 +8,6 @@ Pacote organizado em camadas:
 """
 from unepdf.constantes import APP_NOME
 
-__version__ = "0.1.0"
+__version__ = "2.0.0"
 
 __all__ = ["APP_NOME", "__version__"]

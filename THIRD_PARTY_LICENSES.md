@@ -69,24 +69,27 @@ FreeType, ICU, Little CMS, libjpeg-turbo, OpenJPEG, libpng, LLVM libc, simdutf e
 
 A conversão para PDF/A e a compressão forte usam o [Ghostscript](https://ghostscript.com/), distribuído
 sob a AGPL-3.0. Ele é um programa separado: o UnePDF apenas o executa por linha de comando, sem
-incorporar o código dele, então a licença do UnePDF continua sendo a MIT. Quando o Ghostscript for
-distribuído junto com o instalador do UnePDF, o texto da licença dele e o link para o código-fonte
-(<https://ghostscript.com/releases/gsdnld.html>) irão junto.
+incorporar o código dele, então a licença do UnePDF continua sendo a MIT. O instalador e o `.zip`
+portátil trazem uma cópia sem modificações na pasta `ghostscript`, com o texto da licença
+(`LICENSE.txt`) e o link para o código-fonte (<https://ghostscript.com/releases/gsdnld.html>). No
+instalador, ele é um componente opcional.
 
 ## Tesseract
 
 O OCR usa o [Tesseract](https://github.com/tesseract-ocr/tesseract), distribuído sob a Apache-2.0, com os
 dados de idioma do projeto [tessdata](https://github.com/tesseract-ocr/tessdata) (também Apache-2.0). Ele é
-um programa separado, que o UnePDF executa por linha de comando. Quando for distribuído junto com o
-instalador do UnePDF, o texto da licença dele irá junto.
+um programa separado, que o UnePDF executa por linha de comando. O instalador e o `.zip` portátil trazem
+uma cópia sem modificações na pasta `tesseract`, com os idiomas português e inglês e o texto da licença
+(`LICENSE.txt`). No instalador, ele é um componente opcional.
 
 ## Microsoft Office e LibreOffice
 
 A conversão de documentos do Office usa o Microsoft Office ou o LibreOffice já instalados no
 computador. Eles são programas separados, que o UnePDF apenas aciona, e não vão junto com ele.
 
-## Executável
+## Executável e instalador
 
 O executável para Windows é gerado com o [PyInstaller](https://pyinstaller.org/). O carregador do
 PyInstaller é distribuído sob a GPL-2.0 com uma exceção que permite usá-lo em programas de qualquer
-licença, então ele não muda a licença do UnePDF.
+licença, então ele não muda a licença do UnePDF. O instalador é gerado com o
+[Inno Setup](https://jrsoftware.org/isinfo.php), cuja licença permite distribuir instaladores feitos com ele.

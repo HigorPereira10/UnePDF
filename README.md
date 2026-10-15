@@ -114,8 +114,29 @@ para o de um cliente que autorizou alguém a assinar por ele.
 
 ## Instalação
 
-Ainda não há uma versão publicada para download. Por enquanto, o UnePDF pode ser usado a partir do
-código-fonte, como explicado abaixo.
+Baixe a versão mais recente na página de [versões](https://github.com/HigorPereira10/UnePDF/releases/latest):
+
+- **`UnePDF-x.y.z-instalador.exe`**: instala só para o seu usuário, sem pedir administrador. Cria o
+  atalho no Menu Iniciar, a entrada em "Adicionar ou remover programas" e o item "Unir com UnePDF" no
+  botão direito do Explorer. O Ghostscript e o Tesseract vêm junto, como componentes que podem ser
+  desmarcados;
+- **`UnePDF-x.y.z-portatil.zip`**: extraia a pasta onde quiser e abra o `UnePDF.exe`, sem instalar.
+
+Requer Windows 10 ou 11, de 64 bits.
+
+> **"O Windows protegeu o computador"**: o instalador ainda não tem assinatura digital de código (um
+> certificado pago), então o Windows mostra esse aviso na primeira vez. Clique em **Mais informações**
+> e depois em **Executar assim mesmo**. O código-fonte de tudo o que vai no instalador está neste
+> repositório.
+
+Quando sair uma versão nova, o próprio UnePDF avisa na barra lateral. Para atualizar, basta rodar o
+instalador novo por cima: as configurações são mantidas.
+
+### Gerando o instalador
+
+Com o Ghostscript, o Tesseract (com o idioma português) e o [Inno Setup 6](https://jrsoftware.org/isdl.php)
+instalados, rode `scripts\distribuir.bat`. Ele roda os testes, gera o executável, copia só a parte do
+Ghostscript e do Tesseract que o UnePDF usa e grava o instalador e o `.zip` em `dist`.
 
 ## Rodando pelo código-fonte
 

@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 ERRO_JA_EXISTE = 183  # ERROR_ALREADY_EXISTS
 _CHAVE = b"UnePDF"  # evita que outro programa que use o mesmo canal seja confundido com o app
 QUALQUER_PROCESSO = -1  # ASFW_ANY
+# Nome fixo que o instalador procura para pedir que o app seja fechado antes de atualizar
+TRINCO_EM_EXECUCAO = "UnePDF.Executando"
 
 
 def _nome() -> str:
@@ -49,6 +51,7 @@ class InstanciaUnica:
             kernel32.CloseHandle(trinco)
             return False
         self._trinco = trinco
+        self._em_execucao = kernel32.CreateMutexW(None, False, TRINCO_EM_EXECUCAO)
         return True
 
     def enviar(self, mensagem: dict, tempo_limite: float = 5.0) -> bool:
