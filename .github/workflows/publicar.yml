@@ -1,0 +1,69 @@
+# Gera o instalador e o .zip portátil quando uma tag de versão (ex.: v2.0.0) é enviada,
+# e cria a versão na página Releases como rascunho, para ser conferida e publicada à mão.
+name: Publicar versão
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Conferir se a tag é a versão do programa
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $versao = python -c "import unepdf; print(unepdf.__version__)"
+          if ("${{ github.ref_name }}" -ne "v$versao") {
+            Write-Error "A tag ${{ github.ref_name }} não bate com a versão do programa (v$versao). Ajuste unepdf/__init__.py ou a tag."
+            exit 1
+          }
+          "VERSAO=$versao" >> $env:GITHUB_ENV
+
+      - name: Instalar Ghostscript, Tesseract e Inno Setup
+        shell: pwsh
+        run: |
+          choco install ghostscript tesseract innosetup -y --no-progress
+          # O pacote do Tesseract traz só o inglês: o português vem do projeto oficial de idiomas
+          $tessdata = "C:\Program Files\Tesseract-OCR\tessdata"
+          Invoke-WebRequest "https://github.com/tesseract-ocr/tessdata_fast/raw/main/por.traineddata" -OutFile "$tessdata\por.traineddata"
+
+      - name: Criar o ambiente virtual
+        run: python -m venv .venv
+
+      - name: Gerar instalador e .zip (com os testes)
+        shell: cmd
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: scripts\distribuir.bat --sem-pausa
+
+      - name: Criar a versão em Releases (rascunho)
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            "dist\instalador\UnePDF-$env:VERSAO-instalador.exe" `
+            "dist\UnePDF-$env:VERSAO-portatil.zip" `
+            --draft --generate-notes --title "UnePDF $env:VERSAO"
+
+      - name: Guardar os arquivos (execução manual, sem tag)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unepdf-distribuicao
+          path: |
+            dist/instalador/*.exe
+            dist/*.zip
