@@ -58,6 +58,11 @@ def folha_de_estilo(c: Cores = CORES) -> str:
     #grupoLateral QLabel {{ color: {c.texto_suave}; font-size: 10.5pt; font-weight: 600; background: transparent; }}
     #grupoLateral[ativo="true"] QLabel {{ color: {c.texto}; }}
     #versaoApp {{ color: {c.texto_desativado}; font-size: 8.5pt; }}
+    QPushButton#avisoVersao {{
+        background: transparent; border: 1px solid {c.destaque_2}; color: {c.destaque_2};
+        border-radius: 8px; padding: 6px 8px; font-size: 9pt; margin-bottom: 6px;
+    }}
+    QPushButton#avisoVersao:hover {{ background: {c.cartao}; }}
 
     #titulo {{ font-size: 20pt; font-weight: 600; }}
     #tituloCategoria {{ color: {c.texto_suave}; font-size: 11pt; font-weight: 600; }}

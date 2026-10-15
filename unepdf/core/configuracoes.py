@@ -41,6 +41,7 @@ class Configuracoes:
     ocr_juntar: bool = False
     # Última pasta de onde um certificado foi aberto (o certificado e a senha nunca são guardados)
     pasta_certificados: str = ""
+    verificar_atualizacoes: bool = True
 
 
 def pasta_saida_valida(nome: str) -> bool:

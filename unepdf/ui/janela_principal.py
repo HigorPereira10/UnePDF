@@ -1,8 +1,11 @@
 """Janela principal: barra lateral de navegação e área com a tela atual."""
 from __future__ import annotations
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QGuiApplication, QIcon
+import logging
+from pathlib import Path
+
+from PySide6.QtCore import QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QDragEnterEvent, QDropEvent, QGuiApplication, QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -26,14 +29,24 @@ from unepdf.ui.ferramentas import FERRAMENTAS, TelaFerramenta, buscar, por_categ
 from unepdf.ui.tela_configuracoes import TelaConfiguracoes
 from unepdf.ui.tela_inicial import TelaInicial
 from unepdf.ui.tema import CORES
+from unepdf.utils.atualizacao import NovaVersao
 from unepdf.utils.recursos import caminho_recurso
+
+log = logging.getLogger(__name__)
 
 CHAVE_INICIO = "inicio"
 CHAVE_UNIR = "unir"
 CHAVE_CONFIGURACOES = "configuracoes"
+# Espera depois do último arquivo vindo do Explorer: ele abre uma cópia do app por arquivo, em sequência
+ESPERA_ARQUIVOS_EXTERNOS_MS = 600
 
 
 class JanelaPrincipal(QMainWindow):
+    # Podem ser emitidos de outras threads: o Qt entrega na thread da interface
+    arquivos_externos = Signal(list)
+    nova_versao = Signal(object)
+    trazer_para_frente = Signal()
+
     def __init__(self, contexto: ContextoApp):
         super().__init__()
         self.contexto = contexto
@@ -68,6 +81,14 @@ class JanelaPrincipal(QMainWindow):
         self._centralizar_na_tela()
         self.setAcceptDrops(True)
 
+        self._externos: list[Path] = []
+        self._timer_externos = QTimer(self)
+        self._timer_externos.setSingleShot(True)
+        self._timer_externos.timeout.connect(self._entregar_externos)
+        self.arquivos_externos.connect(self.receber_externos)
+        self.nova_versao.connect(self.mostrar_nova_versao)
+        self.trazer_para_frente.connect(self._para_frente)
+
     def _montar_barra_lateral(self) -> QFrame:
         barra = QFrame()
         barra.setObjectName("barraLateral")
@@ -88,6 +109,12 @@ class JanelaPrincipal(QMainWindow):
 
         versao = QLabel(f"Versão {__version__}")
         versao.setObjectName("versaoApp")
+        self.aviso_versao = QPushButton()
+        self.aviso_versao.setObjectName("avisoVersao")
+        self.aviso_versao.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.aviso_versao.hide()
+        self._pagina_nova_versao = ""
+        self.aviso_versao.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(self._pagina_nova_versao)))
 
         # A lista de ferramentas rola quando a janela é baixa; logo e configurações ficam sempre visíveis
         lista = QWidget()
@@ -119,6 +146,7 @@ class JanelaPrincipal(QMainWindow):
         layout.addSpacing(6)
         layout.addWidget(self._criar_item(CHAVE_CONFIGURACOES, "Configurações", "assets/icones/configuracoes.svg"))
         layout.addSpacing(10)
+        layout.addWidget(self.aviso_versao)
         layout.addWidget(versao)
         return barra
 
@@ -178,6 +206,42 @@ class JanelaPrincipal(QMainWindow):
             self.abrir(CHAVE_UNIR)
             tela = self.telas[CHAVE_UNIR]
         tela.receber_caminhos(caminhos)
+
+    # Arquivos vindos de fora (Explorer, ícone do programa) e aviso de nova versão
+
+    def receber_externos(self, caminhos: list) -> None:
+        """Junta os arquivos que chegam quase ao mesmo tempo e entrega todos de uma vez ao Unir PDFs."""
+        self._externos.extend(Path(c) for c in caminhos)
+        self._timer_externos.start(ESPERA_ARQUIVOS_EXTERNOS_MS)
+
+    def _entregar_externos(self) -> None:
+        unir = self.telas.get(CHAVE_UNIR)
+        if unir and unir.executor.em_execucao:
+            # Uma união já está em andamento: os arquivos esperam ela terminar
+            self._timer_externos.start(1000)
+            return
+        caminhos = list(dict.fromkeys(self._externos))
+        self._externos.clear()
+        log.info("%d arquivo(s) recebidos de fora do app", len(caminhos))
+        self._para_frente()
+        if caminhos:
+            self.abrir(CHAVE_UNIR)
+            self.telas[CHAVE_UNIR].receber_caminhos(caminhos)
+
+    def _para_frente(self) -> None:
+        if self.isMinimized():
+            self.showNormal()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def mostrar_nova_versao(self, nova: NovaVersao | None) -> None:
+        if nova is None:
+            return
+        self._pagina_nova_versao = nova.pagina
+        self.aviso_versao.setText(f"Nova versão {nova.versao} disponível")
+        self.aviso_versao.setToolTip("Abre a página de download no navegador")
+        self.aviso_versao.show()
 
     def _centralizar_na_tela(self) -> None:
         tela = self.screen() or QGuiApplication.primaryScreen()

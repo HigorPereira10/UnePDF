@@ -5,6 +5,7 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -21,7 +22,7 @@ from unepdf.core.configuracoes import Configuracoes, pasta_saida_valida
 from unepdf.core.nomenclatura import Perfil, destino_padrao
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import mostrar_erro, perguntar
-from unepdf.utils import sistema
+from unepdf.utils import menu_contexto, sistema
 from unepdf.utils.caminhos import arquivo_registro_assinaturas, pasta_logs
 
 # Pastas fictícias usadas só para mostrar como fica o nome do arquivo final
@@ -70,6 +71,7 @@ class TelaConfiguracoes(QWidget):
         layout.addSpacing(8)
         layout.addWidget(self._montar_pasta_inicial())
         layout.addWidget(self._montar_nomenclatura())
+        layout.addWidget(self._montar_windows())
         layout.addWidget(self._montar_manutencao())
         layout.addStretch()
 
@@ -147,6 +149,40 @@ class TelaConfiguracoes(QWidget):
         secao.corpo.addWidget(self.previa)
         return secao
 
+    def _montar_windows(self) -> _Secao:
+        secao = _Secao("Windows")
+        self.check_menu_explorer = QCheckBox('Mostrar "Unir com UnePDF" no botão direito do Explorer')
+        self.check_menu_explorer.toggled.connect(self._alterar_menu_explorer)
+        secao.corpo.addWidget(self.check_menu_explorer)
+        secao.corpo.addWidget(_texto_ajuda(
+            "Selecione PDFs (ou uma pasta), clique com o botão direito e eles abrem direto no Unir PDFs. "
+            'No Windows 11, o item fica em "Mostrar mais opções".'
+        ))
+        self.check_atualizacoes = QCheckBox("Avisar quando houver uma versão nova do UnePDF")
+        self.check_atualizacoes.toggled.connect(self._alterar_atualizacoes)
+        secao.corpo.addWidget(self.check_atualizacoes)
+        secao.corpo.addWidget(_texto_ajuda(
+            "Ao abrir, o app consulta a página do projeto no GitHub para saber a versão mais recente. "
+            "Nenhum arquivo é enviado."
+        ))
+        return secao
+
+    def _alterar_menu_explorer(self, ligado: bool) -> None:
+        if ligado == menu_contexto.instalado():
+            return
+        try:
+            menu_contexto.instalar() if ligado else menu_contexto.remover()
+        except OSError as erro:
+            mostrar_erro(self, erro, "Não foi possível alterar o menu do Explorer")
+        self.check_menu_explorer.blockSignals(True)
+        self.check_menu_explorer.setChecked(menu_contexto.instalado())
+        self.check_menu_explorer.blockSignals(False)
+
+    def _alterar_atualizacoes(self, ligado: bool) -> None:
+        if self.contexto.config.verificar_atualizacoes != ligado:
+            self.contexto.config.verificar_atualizacoes = ligado
+            self.contexto.salvar_config()
+
     def _montar_manutencao(self) -> _Secao:
         secao = _Secao("Suporte")
         secao.corpo.addWidget(_texto_ajuda(
@@ -174,6 +210,11 @@ class TelaConfiguracoes(QWidget):
         self.campo_pasta_saida.setText(config.pasta_saida)
         self.erro_pasta_saida.hide()
         (self.opcao_notas if config.perfil_nomenclatura is Perfil.NOTAS_FISCAIS else self.opcao_generico).setChecked(True)
+        for caixa, valor in ((self.check_menu_explorer, menu_contexto.instalado()),
+                             (self.check_atualizacoes, config.verificar_atualizacoes)):
+            caixa.blockSignals(True)
+            caixa.setChecked(valor)
+            caixa.blockSignals(False)
         self._atualizar_previa()
 
     def _atualizar_previa(self) -> None:
