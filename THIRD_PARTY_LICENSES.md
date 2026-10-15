@@ -25,6 +25,14 @@ pelo pip.
 | [phonenumbers](https://github.com/daviddrysdale/python-phonenumbers) | Formatação de telefones nos documentos fiscais | Apache-2.0 |
 | [defusedxml](https://github.com/tiran/defusedxml) | Leitura segura dos XMLs | PSF-2.0 |
 | [pywin32](https://github.com/mhammond/pywin32) | Automação do Microsoft Office na conversão para PDF | PSF-2.0 |
+| [pyHanko](https://github.com/MatthiasValvekens/pyHanko) e pyhanko-certvalidator | Assinatura digital de PDFs | MIT |
+| [asn1crypto](https://github.com/wbond/asn1crypto) e [oscrypto](https://github.com/wbond/oscrypto) | Leitura de certificados (dependências do pyHanko) | MIT |
+| [aiohttp](https://github.com/aio-libs/aiohttp), aiohappyeyeballs, aiosignal, frozenlist, multidict, propcache e yarl | Consulta à certificadora durante a assinatura | Apache-2.0 (aiohttp também MIT; aiohappyeyeballs PSF-2.0) |
+| [lxml](https://github.com/lxml/lxml) | Dependência do pyHanko | BSD-3-Clause |
+| attrs, tzlocal e uritools | Dependências do pyHanko | MIT |
+| idna | Dependência do aiohttp | BSD-3-Clause |
+| tzdata | Fusos horários da data da assinatura | Apache-2.0 |
+| [certifi](https://github.com/certifi/python-certifi) | Certificados das conexões seguras, sem modificação | MPL-2.0 |
 | [PySide6 e shiboken6](https://doc.qt.io/qtforpython-6/) (Qt for Python) | Interface gráfica | LGPL-3.0 ([texto](licenses/LGPL-3.0.txt), que complementa a [GPL-3.0](licenses/GPL-3.0.txt)) |
 | [Qt 6](https://www.qt.io/) | Bibliotecas da interface, distribuídas junto com o PySide6 | LGPL-3.0 |
 | [Python](https://www.python.org/) | Interpretador incluído no executável | PSF-2.0 |

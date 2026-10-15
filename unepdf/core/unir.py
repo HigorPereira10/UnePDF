@@ -20,7 +20,7 @@ from pypdf import PdfWriter
 from unepdf.core.capa import ALTURA, LARGURA, desenhar_capa, paginas_da_capa
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.gravacao import gravar_com_seguranca
-from unepdf.core.leitor_pdf import PdfInvalido, ler_pdf
+from unepdf.core.leitor_pdf import PdfInvalido, ler_pdf, tem_assinatura
 from unepdf.core.modelos import ArquivoIgnorado, Resultado
 from unepdf.core.progresso import CallbackProgresso, Cancelamento
 
@@ -51,6 +51,7 @@ def unir(
     vistos: dict[bytes, Path] = {}
     # Nome de cada arquivo unido e a página onde ele começa, para a capa
     inicios: list[tuple[str, int]] = []
+    assinados = 0
     if capa:
         # A primeira página da capa e o seu marcador vêm antes de tudo; se o índice precisar
         # de mais páginas, elas entram no final, logo depois desta
@@ -64,6 +65,7 @@ def unir(
             progresso(posicao, total_passos, caminho.name)
         try:
             leitor, dados = ler_pdf(caminho)
+            assinados += tem_assinatura(leitor)
             if pular_repetidos:
                 assinatura = hashlib.sha256(dados).digest()
                 if assinatura in vistos:
@@ -118,6 +120,10 @@ def unir(
         paginas=len(escritor.pages),
         substituiu_anterior=substituiu,
         ignorados=ignorados,
+        observacao=(
+            f"{assinados} arquivo(s) tinham assinatura digital, que não vale no PDF unido: "
+            "assine o resultado de novo, se precisar." if assinados else ""
+        ),
     )
 
 

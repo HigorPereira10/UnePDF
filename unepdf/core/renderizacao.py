@@ -5,6 +5,7 @@ biblioteca de interface: a camada ui converte para QImage, e a conversão para a
 """
 from __future__ import annotations
 
+import re
 import threading
 from dataclasses import dataclass
 
@@ -32,6 +33,8 @@ class DocumentoRenderizavel:
         with _trava_pdfium:
             try:
                 self._documento = pdfium.PdfDocument(dados)
+                # Sem isso o PDFium não desenha campos de formulário, como o carimbo de uma assinatura
+                self._documento.init_forms()
             except pdfium.PdfiumError as erro:
                 raise ErroUnePDF("Não foi possível desenhar as páginas deste PDF.") from erro
             self.total = len(self._documento)
@@ -68,6 +71,44 @@ class DocumentoRenderizavel:
             texto_pagina = pagina.get_textpage()
             try:
                 return texto_pagina.get_text_range().replace("\r\n", "\n").replace("\r", "\n")
+            finally:
+                texto_pagina.close()
+                pagina.close()
+
+    def caixa_visivel(self, indice: int) -> tuple[float, float, float, float]:
+        """Área visível da página (esquerda, base, direita, topo), em pontos, sem considerar a rotação."""
+        with _trava_pdfium:
+            pagina = self._documento[indice]
+            try:
+                return tuple(pagina.get_cropbox())
+            finally:
+                pagina.close()
+
+    def rotacao(self, indice: int) -> int:
+        with _trava_pdfium:
+            pagina = self._documento[indice]
+            try:
+                return pagina.get_rotation()
+            finally:
+                pagina.close()
+
+    def linhas_de_assinatura(self, indice: int, minimo: int = 8) -> list[tuple[float, float, float, float]]:
+        """Caixas das sequências de sublinhados ("________") da página, que marcam onde assinar."""
+        with _trava_pdfium:
+            pagina = self._documento[indice]
+            texto_pagina = pagina.get_textpage()
+            try:
+                total = texto_pagina.count_chars()
+                texto = texto_pagina.get_text_range(0, total)
+                linhas = []
+                for sequencia in re.finditer(rf"_{{{minimo},}}", texto):
+                    caixas = [texto_pagina.get_charbox(i) for i in range(sequencia.start(), min(sequencia.end(), total))]
+                    if caixas:
+                        linhas.append((
+                            min(c[0] for c in caixas), min(c[1] for c in caixas),
+                            max(c[2] for c in caixas), max(c[3] for c in caixas),
+                        ))
+                return linhas
             finally:
                 texto_pagina.close()
                 pagina.close()

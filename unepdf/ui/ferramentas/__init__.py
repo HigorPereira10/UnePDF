@@ -11,6 +11,7 @@ from typing import Callable
 from unepdf.core import ghostscript, ocr, office
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
+from unepdf.ui.ferramentas.assinar import TelaAssinar
 from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfA, TelaPdfParaImagens, TelaPdfParaTexto
 from unepdf.ui.ferramentas.dividir import TelaDividir
 from unepdf.ui.ferramentas.editar import TelaMarcaDagua, TelaNumerar
@@ -165,6 +166,14 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/remover_senha.svg",
         categoria="Segurança",
         tela=TelaRemoverSenha,
+    ),
+    Ferramenta(
+        chave="assinar",
+        nome="Assinar PDF",
+        descricao="Assine PDFs com certificado digital A1 (.pfx), com carimbo na página.",
+        icone="assets/icones/assinar.svg",
+        categoria="Segurança",
+        tela=TelaAssinar,
     ),
     Ferramenta(
         chave="comprimir",

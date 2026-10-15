@@ -24,7 +24,7 @@ arquivos, inclusive em pastas de rede.
 | Organizar | Unir PDFs, Unir em lote, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
 | Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Office para PDF (Word, Excel e PowerPoint), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
-| Segurança | Proteger com senha (AES de 256 bits) e Remover senha |
+| Segurança | Proteger com senha (AES de 256 bits), Remover senha e Assinar PDF (certificado digital A1) |
 | Otimizar | Comprimir PDF e OCR (deixa PDFs escaneados e imagens pesquisáveis) |
 
 ## Unir PDFs
@@ -92,6 +92,25 @@ arquivo é reconhecido pelo conteúdo, então uma pasta pode ter tipos misturado
 
 O desenho dos documentos é feito pela biblioteca
 [BrazilFiscalReport](https://github.com/Engenere/BrazilFiscalReport).
+
+## Assinar PDF
+
+Assina PDFs com certificado digital A1 (arquivo `.pfx`), no padrão PAdES, aceito pelo
+[validador do ITI](https://validar.iti.gov.br). Serve tanto para o certificado do escritório quanto
+para o de um cliente que autorizou alguém a assinar por ele.
+
+- antes de assinar, o app mostra o titular, o CNPJ ou CPF, a certificadora e a validade do certificado,
+  recusa certificado vencido e avisa quando o CNPJ do certificado não aparece no documento (para não
+  assinar com o certificado do cliente errado);
+- o carimbo fica sobre a última linha de assinatura do documento, e um clique na prévia da página muda
+  o lugar; também dá para assinar sem carimbo;
+- vários PDFs do mesmo titular podem ser assinados de uma vez;
+- a senha do certificado nunca é guardada;
+- com internet, a confirmação da certificadora de que o certificado não estava revogado vai junto no
+  PDF, para a assinatura continuar verificável depois que o certificado vencer. Só essa consulta sai
+  do computador, nunca o documento;
+- cada assinatura é anotada num registro local (data, hora, arquivo, titular e usuário do Windows),
+  que abre no Excel pelas configurações.
 
 ## Instalação
 

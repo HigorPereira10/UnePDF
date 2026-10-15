@@ -19,3 +19,8 @@ def pasta_configuracoes() -> Path:
 def pasta_logs() -> Path:
     """%LOCALAPPDATA%\\UnePDF\\logs: fica só na máquina, para não pesar no perfil móvel."""
     return _pasta_do_sistema("LOCALAPPDATA", "AppData/Local") / APP_NOME / "logs"
+
+
+def arquivo_registro_assinaturas() -> Path:
+    """Planilha com o histórico das assinaturas feitas neste computador."""
+    return pasta_logs() / "assinaturas.csv"

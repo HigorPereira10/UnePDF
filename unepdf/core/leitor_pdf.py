@@ -59,6 +59,15 @@ def ler_pdf(caminho: Path) -> tuple[PdfReader, bytes]:
     return leitor, dados
 
 
+def tem_assinatura(leitor: PdfReader) -> bool:
+    """Indica se o PDF tem alguma assinatura digital. Qualquer alteração no arquivo a invalida."""
+    try:
+        campos = leitor.get_fields() or {}
+    except Exception:
+        return False
+    return any(campo.get("/FT") == "/Sig" and campo.get("/V") is not None for campo in campos.values())
+
+
 def abrir_pdf_ou_erro(caminho: Path) -> PdfReader:
     """Como abrir_pdf, para ferramentas que trabalham com um arquivo só: o problema vira ErroUnePDF."""
     return ler_pdf_ou_erro(caminho)[0]

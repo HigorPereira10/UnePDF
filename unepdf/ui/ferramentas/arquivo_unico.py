@@ -8,11 +8,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pypdf import PdfReader
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 
 from unepdf.core.erros import ErroUnePDF, OperacaoCancelada
+from unepdf.core.leitor_pdf import tem_assinatura
 from unepdf.core.localizador import pdf_unico
 from unepdf.core.modelos import Resultado
 from unepdf.ui.componentes import AreaSoltar, PainelProgresso, PainelResultado
@@ -25,6 +27,13 @@ if TYPE_CHECKING:
     from unepdf.ui.ferramentas import Ferramenta
 
 ATRASO_PROGRESSO_MS = 300
+
+
+def _assinado(origem: Path) -> bool:
+    try:
+        return tem_assinatura(PdfReader(origem))
+    except Exception:
+        return False
 
 
 class TelaArquivoUnico(TelaFerramenta):
@@ -46,6 +55,7 @@ class TelaArquivoUnico(TelaFerramenta):
         # Evita consultar o disco (às vezes na rede) a cada tecla digitada nas opções
         self._existencia: dict[Path, bool] = {}
         self._aviso_era_indisponivel = False
+        self._origem_assinada = False
 
         self.area = AreaSoltar("Arraste um PDF para cá", self.dica_area, com_pasta=False, texto_arquivos="Escolher PDF")
         self.area.caminhos_soltos.connect(self.receber_caminhos)
@@ -167,15 +177,14 @@ class TelaArquivoUnico(TelaFerramenta):
 
         self.progresso.iniciar("Lendo o arquivo...", cancelavel=False)
         self._timer_progresso.start(ATRASO_PROGRESSO_MS)
-        self.executar(
-            lambda progresso, cancelamento: self.carregar(origem),
-            lambda info: self._ao_carregar(origem, info),
-            self._ao_falhar_carga,
-        )
+        def carregar(progresso, cancelamento):
+            return self.carregar(origem), _assinado(origem)
 
-    def _ao_carregar(self, origem: Path, info: object) -> None:
+        self.executar(carregar, lambda carga: self._ao_carregar(origem, *carga), self._ao_falhar_carga)
+
+    def _ao_carregar(self, origem: Path, info: object, assinado: bool = False) -> None:
         self._timer_progresso.stop()
-        self.origem, self.info = origem, info
+        self.origem, self.info, self._origem_assinada = origem, info, assinado
         self._existencia.clear()
         self._pasta_saida_usada = self.contexto.config.pasta_saida
         if self.contexto.config.ultima_pasta != str(origem.parent):
@@ -203,6 +212,8 @@ class TelaArquivoUnico(TelaFerramenta):
         self.rotulo_destino.setText(str(destino))
         problema = self.validar()
         avisos = [aviso] if aviso else []
+        if self._origem_assinada:
+            avisos.append("Este PDF tem assinatura digital: na cópia gerada, ela deixa de valer.")
         if problema:
             avisos.append(problema)
         elif self._existe(destino):

@@ -39,6 +39,8 @@ class Configuracoes:
     office_pdfa: bool = False
     office_juntar: bool = False
     ocr_juntar: bool = False
+    # Última pasta de onde um certificado foi aberto (o certificado e a senha nunca são guardados)
+    pasta_certificados: str = ""
 
 
 def pasta_saida_valida(nome: str) -> bool:

@@ -22,7 +22,7 @@ from unepdf.core.nomenclatura import Perfil, destino_padrao
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import mostrar_erro, perguntar
 from unepdf.utils import sistema
-from unepdf.utils.caminhos import pasta_logs
+from unepdf.utils.caminhos import arquivo_registro_assinaturas, pasta_logs
 
 # Pastas fictícias usadas só para mostrar como fica o nome do arquivo final
 EXEMPLO_GENERICO = Path(r"C:\Documentos\Notas de janeiro")
@@ -150,14 +150,18 @@ class TelaConfiguracoes(QWidget):
     def _montar_manutencao(self) -> _Secao:
         secao = _Secao("Suporte")
         secao.corpo.addWidget(_texto_ajuda(
-            "O registro de atividades ajuda a investigar problemas. Ele fica só neste computador."
+            "O registro de atividades ajuda a investigar problemas, e o de assinaturas mostra quem assinou "
+            "o quê com o Assinar PDF. Os dois ficam só neste computador."
         ))
         abrir_logs = QPushButton("Abrir pasta de registros")
         abrir_logs.clicked.connect(self._abrir_logs)
+        self.botao_assinaturas = QPushButton("Abrir registro de assinaturas")
+        self.botao_assinaturas.clicked.connect(self._abrir_registro_assinaturas)
         restaurar = QPushButton("Restaurar configurações padrão")
         restaurar.clicked.connect(self._restaurar_padroes)
         linha = QHBoxLayout()
         linha.addWidget(abrir_logs)
+        linha.addWidget(self.botao_assinaturas)
         linha.addWidget(restaurar)
         linha.addStretch()
         secao.corpo.addLayout(linha)
@@ -208,6 +212,16 @@ class TelaConfiguracoes(QWidget):
             pasta = pasta_logs()
             pasta.mkdir(parents=True, exist_ok=True)
             sistema.abrir_arquivo(pasta)
+        except Exception as erro:
+            mostrar_erro(self, erro, "Não foi possível abrir")
+
+    def _abrir_registro_assinaturas(self) -> None:
+        registro = arquivo_registro_assinaturas()
+        if not registro.exists():
+            self.botao_assinaturas.setText("Nenhuma assinatura registrada ainda")
+            return
+        try:
+            sistema.abrir_arquivo(registro)
         except Exception as erro:
             mostrar_erro(self, erro, "Não foi possível abrir")
 

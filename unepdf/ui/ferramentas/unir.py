@@ -372,6 +372,8 @@ class TelaUnir(TelaFerramenta):
         )
         if resultado.substituiu_anterior:
             resumo += " O arquivo anterior com o mesmo nome foi substituído."
+        if resultado.observacao:
+            resumo += f" {resultado.observacao}"
         self.resultado.mostrar_sucesso("PDF criado!", resumo, resultado.destino, resultado.ignorados)
         self.estados.setCurrentWidget(self.resultado)
 
