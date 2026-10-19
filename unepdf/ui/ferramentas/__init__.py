@@ -43,6 +43,12 @@ class Ferramenta:
     tela: Callable[[Ferramenta, ContextoApp], TelaFerramenta]
     # Devolve o motivo quando falta algo para a ferramenta funcionar (ex.: programa externo ausente)
     motivo_indisponivel: Callable[[], str | None] = _sempre_disponivel
+    # Nome na barra lateral, quando o completo não cabe nela
+    nome_curto: str = ""
+
+    @property
+    def nome_lateral(self) -> str:
+        return self.nome_curto or self.nome
 
 
 FERRAMENTAS: list[Ferramenta] = [
@@ -69,6 +75,7 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/separar.svg",
         categoria="Organizar",
         tela=TelaSepararNotas,
+        nome_curto="Emitidas e recebidas",
     ),
     Ferramenta(
         chave="dividir",

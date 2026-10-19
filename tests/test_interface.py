@@ -46,6 +46,13 @@ def test_cartao_abre_pelo_teclado(qtbot, janela):
     assert janela.pilha.currentWidget() is janela.telas[cartao.chave]
 
 
+def test_nomes_cabem_na_barra_lateral(janela):
+    # A barra tem largura fixa: acima de uns 20 caracteres o nome aparece cortado (use nome_curto)
+    assert [f.nome_lateral for f in FERRAMENTAS if len(f.nome_lateral) > 20] == []
+    separar = janela._botoes_por_chave["separar"]
+    assert separar.text() == "Emitidas e recebidas" and separar.toolTip() == "Separar emitidas e recebidas"
+
+
 def test_tela_da_ferramenta_e_criada_uma_vez(janela):
     janela.abrir("unir")
     primeira = janela.telas["unir"]

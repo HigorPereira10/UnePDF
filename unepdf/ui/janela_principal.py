@@ -127,7 +127,9 @@ class JanelaPrincipal(QMainWindow):
         for categoria, ferramentas in por_categoria():
             grupo = GrupoLateral(categoria)
             for ferramenta in ferramentas:
-                grupo.adicionar(self._criar_item(ferramenta.chave, ferramenta.nome, ferramenta.icone))
+                item = self._criar_item(ferramenta.chave, ferramenta.nome_lateral, ferramenta.icone)
+                item.setToolTip(ferramenta.nome if ferramenta.nome_curto else "")
+                grupo.adicionar(item)
             self._grupos[categoria] = grupo
             layout_lista.addWidget(grupo)
         layout_lista.addStretch()
