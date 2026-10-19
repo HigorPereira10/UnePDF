@@ -116,6 +116,31 @@ def pasta_base(arquivos: list[Path]) -> Path:
     return arquivos[0].parent
 
 
+class SoEmSubpastas(ErroUnePDF):
+    """A pasta não tem arquivos direto nela, mas as subpastas têm (ex.: notas separadas em emitidas e recebidas)."""
+
+    def __init__(self, mensagem: str, pasta: Path, subpastas: list[Path]):
+        super().__init__(mensagem)
+        self.pasta = pasta
+        self.subpastas = subpastas
+
+
+def subpastas_com_arquivos(pasta: Path, pasta_saida: str = PASTA_SAIDA_PADRAO, tipo: TipoArquivo = PDF) -> list[Path]:
+    """Subpastas (só o primeiro nível, sem a pasta de saída) que têm arquivos do tipo direto nelas."""
+    encontradas = []
+    try:
+        subpastas = sorted((p for p in pasta.iterdir() if p.is_dir() and not eh_pasta_saida(p, pasta_saida)), key=ordem_natural)
+    except OSError:
+        return []
+    for subpasta in subpastas:
+        try:
+            if any(eh_do_tipo(p, tipo) for p in subpasta.iterdir()):
+                encontradas.append(subpasta)
+        except OSError:
+            continue
+    return encontradas
+
+
 @dataclass
 class Selecao:
     """Arquivos de entrada já validados, e a pasta onde o resultado será criado."""
@@ -137,9 +162,11 @@ def montar_selecao(
         pasta = pastas[0]
         arquivos = listar_pdfs_da_pasta(pasta, pasta_saida, tipo)
         if not arquivos:
-            raise ErroUnePDF(
-                f"{tipo.nenhum_na_pasta} direto na pasta:\n{pasta}\n\nArquivos dentro de subpastas não entram."
-            )
+            mensagem = f"{tipo.nenhum_na_pasta} direto na pasta:\n{pasta}\n\nArquivos dentro de subpastas não entram."
+            subpastas = subpastas_com_arquivos(pasta, pasta_saida, tipo)
+            if subpastas:
+                raise SoEmSubpastas(mensagem, pasta, subpastas)
+            raise ErroUnePDF(mensagem)
         return Selecao(arquivos, pasta, pasta)
 
     arquivos = filtrar_pdfs_selecionados(caminhos, pasta_saida, tipo)

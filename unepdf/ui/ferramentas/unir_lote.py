@@ -245,7 +245,8 @@ class TelaUnirLote(TelaFerramenta):
 
         pasta_saida = self.contexto.config.pasta_saida
         self.info_destino.setText(
-            f'Cada unificado é salvo na subpasta "{pasta_saida}" da sua própria pasta. Os originais não são alterados.'
+            f'Cada unificado é salvo numa subpasta "{pasta_saida}" (passe o mouse sobre o nome para ver onde). '
+            "Os originais não são alterados."
         )
         avisos = []
         if preparo.existentes:

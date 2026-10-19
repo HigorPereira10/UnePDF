@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from unepdf.core.configuracoes import Configuracoes, pasta_saida_valida
 from unepdf.core.nomenclatura import Perfil, destino_padrao
+from unepdf.core.separar import PASTAS_PADRAO, Lado, nomes_das_pastas
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import mostrar_erro, perguntar
 from unepdf.utils import menu_contexto, sistema
@@ -71,6 +73,7 @@ class TelaConfiguracoes(QWidget):
         layout.addSpacing(8)
         layout.addWidget(self._montar_pasta_inicial())
         layout.addWidget(self._montar_nomenclatura())
+        layout.addWidget(self._montar_separar())
         layout.addWidget(self._montar_windows())
         layout.addWidget(self._montar_manutencao())
         layout.addStretch()
@@ -149,14 +152,97 @@ class TelaConfiguracoes(QWidget):
         secao.corpo.addWidget(self.previa)
         return secao
 
+    def _montar_separar(self) -> _Secao:
+        secao = _Secao("Separar emitidas e recebidas")
+        secao.corpo.addWidget(_texto_ajuda(
+            "Nomes das subpastas criadas dentro da pasta de cada mês. O tipo vem do caminho da pasta "
+            "(ex.: ...\\DANFSE\\EMPRESA\\MMAAAA); fora desse formato, valem os nomes de \"Outros\"."
+        ))
+        grade = QGridLayout()
+        grade.setHorizontalSpacing(10)
+        grade.setVerticalSpacing(6)
+        for coluna, texto in enumerate(("TIPO", "EMITIDAS", "RECEBIDAS")):
+            rotulo = QLabel(texto)
+            rotulo.setObjectName("rotuloCampo")
+            grade.addWidget(rotulo, 0, coluna)
+        self.campos_separar: dict[tuple[str, Lado], QLineEdit] = {}
+        for linha, tipo in enumerate(PASTAS_PADRAO, start=1):
+            grade.addWidget(QLabel(tipo.capitalize() if tipo == "OUTROS" else tipo), linha, 0)
+            for coluna, lado in enumerate(Lado, start=1):
+                campo = QLineEdit()
+                campo.setMaximumWidth(220)
+                campo.textEdited.connect(lambda _texto, t=tipo: self._alterar_nomes_separar(t))
+                self.campos_separar[tipo, lado] = campo
+                grade.addWidget(campo, linha, coluna)
+        grade.setColumnStretch(3, 1)
+        secao.corpo.addLayout(grade)
+        self.erro_separar = QLabel()
+        self.erro_separar.setObjectName("aviso")
+        self.erro_separar.hide()
+        secao.corpo.addWidget(self.erro_separar)
+        secao.corpo.addSpacing(6)
+        secao.corpo.addWidget(_texto_ajuda(
+            "Quando o app não consegue descobrir sozinho a empresa de uma pasta, ele pergunta uma vez e guarda a resposta."
+        ))
+        self.botao_esquecer_empresas = QPushButton()
+        self.botao_esquecer_empresas.clicked.connect(self._esquecer_empresas)
+        linha_botao = QHBoxLayout()
+        linha_botao.addWidget(self.botao_esquecer_empresas)
+        linha_botao.addStretch()
+        secao.corpo.addLayout(linha_botao)
+        return secao
+
+    def _alterar_nomes_separar(self, tipo: str) -> None:
+        nomes = {lado: self.campos_separar[tipo, lado].text().strip() for lado in Lado}
+        padrao = dict(zip(Lado, PASTAS_PADRAO[tipo]))
+        problema = ""
+        if not all(pasta_saida_valida(nome) for nome in nomes.values()):
+            problema = 'Use nomes de pasta simples, sem \\ / : * ? " < > |'
+        elif nomes[Lado.EMITIDAS].casefold() == nomes[Lado.RECEBIDAS].casefold():
+            problema = "As duas subpastas precisam ter nomes diferentes."
+        elif self.contexto.config.pasta_saida.casefold() in {nome.casefold() for nome in nomes.values()}:
+            problema = f'"{self.contexto.config.pasta_saida}" já é a subpasta de saída do UnePDF.'
+        if problema:
+            self.erro_separar.setText(f"{tipo}: {problema}")
+            self.erro_separar.show()
+            return
+        self.erro_separar.hide()
+        # Só guarda o que difere do padrão, para uma mudança futura no padrão valer para quem não personalizou
+        personalizados = {lado.value: nome for lado, nome in nomes.items() if nome != padrao[lado]}
+        if personalizados:
+            self.contexto.config.separar_pastas[tipo] = personalizados
+        else:
+            self.contexto.config.separar_pastas.pop(tipo, None)
+        self.contexto.salvar_config()
+
+    def _atualizar_botao_empresas(self) -> None:
+        quantidade = len(self.contexto.config.separar_empresas)
+        self.botao_esquecer_empresas.setText(
+            f"Esquecer as empresas confirmadas ({quantidade})" if quantidade else "Nenhuma empresa confirmada"
+        )
+        self.botao_esquecer_empresas.setEnabled(bool(quantidade))
+
+    def _esquecer_empresas(self) -> None:
+        if perguntar(
+            self,
+            "Esquecer empresas",
+            "O app volta a perguntar a empresa das pastas em que não consegue descobrir sozinho. Continuar?",
+            confirmar="Esquecer",
+            recusar="Cancelar",
+        ):
+            self.contexto.config.separar_empresas = {}
+            self.contexto.salvar_config()
+            self._atualizar_botao_empresas()
+
     def _montar_windows(self) -> _Secao:
         secao = _Secao("Windows")
-        self.check_menu_explorer = QCheckBox('Mostrar "Unir com UnePDF" no botão direito do Explorer')
+        self.check_menu_explorer = QCheckBox("Mostrar os itens do UnePDF no botão direito do Explorer")
         self.check_menu_explorer.toggled.connect(self._alterar_menu_explorer)
         secao.corpo.addWidget(self.check_menu_explorer)
         secao.corpo.addWidget(_texto_ajuda(
-            "Selecione PDFs (ou uma pasta), clique com o botão direito e eles abrem direto no Unir PDFs. "
-            'No Windows 11, o item fica em "Mostrar mais opções".'
+            '"Unir com UnePDF": selecione PDFs (ou uma pasta) e eles abrem direto no Unir PDFs. '
+            '"Separar emitidas e recebidas": selecione as pastas dos meses e elas abrem direto na separação. '
+            'No Windows 11, os itens ficam em "Mostrar mais opções".'
         ))
         self.check_atualizacoes = QCheckBox("Avisar quando houver uma versão nova do UnePDF")
         self.check_atualizacoes.toggled.connect(self._alterar_atualizacoes)
@@ -215,6 +301,11 @@ class TelaConfiguracoes(QWidget):
             caixa.blockSignals(True)
             caixa.setChecked(valor)
             caixa.blockSignals(False)
+        for tipo in PASTAS_PADRAO:
+            for lado, nome in nomes_das_pastas(tipo, config.separar_pastas).items():
+                self.campos_separar[tipo, lado].setText(nome)
+        self.erro_separar.hide()
+        self._atualizar_botao_empresas()
         self._atualizar_previa()
 
     def _atualizar_previa(self) -> None:
@@ -275,8 +366,11 @@ class TelaConfiguracoes(QWidget):
             recusar="Cancelar",
         ):
             return
-        # A última pasta usada não é uma preferência, então é mantida
-        padrao = Configuracoes(ultima_pasta=self.contexto.config.ultima_pasta)
+        # A última pasta usada e as empresas confirmadas não são preferências, então são mantidas
+        padrao = Configuracoes(
+            ultima_pasta=self.contexto.config.ultima_pasta,
+            separar_empresas=self.contexto.config.separar_empresas,
+        )
         for campo, valor in vars(padrao).items():
             setattr(self.contexto.config, campo, valor)
         self.contexto.salvar_config()

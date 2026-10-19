@@ -21,6 +21,11 @@ def pasta_logs() -> Path:
     return _pasta_do_sistema("LOCALAPPDATA", "AppData/Local") / APP_NOME / "logs"
 
 
+def pasta_separacoes() -> Path:
+    """Registros das separações de notas, usados para desfazer."""
+    return _pasta_do_sistema("LOCALAPPDATA", "AppData/Local") / APP_NOME / "separacoes"
+
+
 def arquivo_registro_assinaturas() -> Path:
     """Planilha com o histórico das assinaturas feitas neste computador."""
     return pasta_logs() / "assinaturas.csv"

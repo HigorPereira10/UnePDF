@@ -20,6 +20,7 @@ from unepdf.ui.ferramentas.office_pdf import TelaOfficeParaPdf
 from unepdf.ui.ferramentas.otimizar import TelaComprimir
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
 from unepdf.ui.ferramentas.seguranca import TelaProteger, TelaRemoverSenha
+from unepdf.ui.ferramentas.separar import TelaSepararNotas
 from unepdf.ui.ferramentas.unir import TelaUnir
 from unepdf.ui.ferramentas.unir_lote import TelaUnirLote
 from unepdf.ui.ferramentas.xml_pdf import TelaXmlParaPdf
@@ -60,6 +61,14 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/unir_lote.svg",
         categoria="Organizar",
         tela=TelaUnirLote,
+    ),
+    Ferramenta(
+        chave="separar",
+        nome="Separar emitidas e recebidas",
+        descricao="Separe as notas fiscais de uma pasta em subpastas de emitidas e recebidas, pelo CNPJ.",
+        icone="assets/icones/separar.svg",
+        categoria="Organizar",
+        tela=TelaSepararNotas,
     ),
     Ferramenta(
         chave="dividir",

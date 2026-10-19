@@ -110,3 +110,11 @@ def test_destino_derivado():
     origem = Path(r"C:\Notas\contrato.pdf")
     assert destino_derivado(origem, "protegido") == Path(r"C:\Notas\UnePDF\contrato - protegido.pdf")
     assert destino_derivado(origem, "texto", extensao=".txt") == Path(r"C:\Notas\UnePDF\contrato - texto.txt")
+
+
+def test_subpasta_de_competencia_grava_junto_da_competencia():
+    mes = RAIZ / "DANFSE" / "0001-EMPRESA EXEMPLO LTDA" / "012026"
+    assert nome_saida(mes / "PRESTADAS", NF) == "DANFSE - 0001-EMPRESA EXEMPLO LTDA - 012026 - PRESTADAS.pdf"
+    assert destino_padrao(mes / "TOMADAS", NF) == mes / "UnePDF" / "DANFSE - 0001-EMPRESA EXEMPLO LTDA - 012026 - TOMADAS.pdf"
+    # No perfil genérico nada muda
+    assert destino_padrao(mes / "TOMADAS") == mes / "TOMADAS" / "UnePDF" / "TOMADAS - UNIFICADO.pdf"

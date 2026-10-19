@@ -92,3 +92,15 @@ def test_caminho_padrao_fica_no_appdata(monkeypatch, tmp_path):
     monkeypatch.setenv("APPDATA", str(tmp_path))
 
     assert caminho_padrao() == tmp_path / "UnePDF" / "config.json"
+
+
+def test_opcoes_da_separacao_de_notas(tmp_path):
+    caminho = tmp_path / "config.json"
+    caminho.write_text(json.dumps({
+        "separar_pastas": {"DANFSE": {"emitidas": "PRESTADAS", "recebidas": "TOM/ADAS"}, "DANFE": "x"},
+        "separar_empresas": {"0001-empresa exemplo ltda": "11222333000181", "outra": 5},
+    }), encoding="utf-8")
+    config = carregar(caminho)
+    assert config.separar_pastas == {"DANFSE": {"emitidas": "PRESTADAS"}}
+    assert config.separar_empresas == {"0001-empresa exemplo ltda": "11222333000181"}
+    assert Configuracoes().separar_pastas == {} and Configuracoes().separar_empresas == {}

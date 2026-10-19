@@ -31,7 +31,10 @@ def chave(modelo: int, numero: int, serie: int = 1, cnpj: str = CNPJ_EMITENTE) -
     return base + str(0 if resto < 2 else 11 - resto)
 
 
-def nfe(numero=1234, serie=1, emitente="EMPRESA EXEMPLO LTDA", modelo=55, cnpj=CNPJ_EMITENTE, protocolo=True) -> str:
+def nfe(
+    numero=1234, serie=1, emitente="EMPRESA EXEMPLO LTDA", modelo=55, cnpj=CNPJ_EMITENTE, protocolo=True,
+    cnpj_dest="44555666000199",
+) -> str:
     ch = chave(modelo, numero, serie, cnpj)
     supl = ""
     if modelo == 65:
@@ -58,7 +61,7 @@ def nfe(numero=1234, serie=1, emitente="EMPRESA EXEMPLO LTDA", modelo=55, cnpj=C
             <CRT>3</CRT>
         </emit>
         <dest>
-            <CNPJ>44555666000199</CNPJ>
+            <CNPJ>{cnpj_dest}</CNPJ>
             <xNome>CLIENTE EXEMPLO LTDA</xNome>
             <enderDest>{ENDERECO}
             </enderDest>
@@ -180,20 +183,31 @@ def mdfe(numero=89, serie=1, emitente="EXEMPLO TRANSPORTES LTDA") -> str:
 </MDFe>"""
 
 
-def nfse(numero=42, emitente="EXEMPLO SERVICOS LTDA") -> str:
+def chave_nfse(numero: int, cnpj: str = CNPJ_EMITENTE) -> str:
+    """Chave de 50 dígitos do padrão nacional da NFS-e, com o dígito verificador."""
+    base = f"355030812{cnpj}{numero:013d}2601{numero:09d}"
+    pesos = [2, 3, 4, 5, 6, 7, 8, 9]
+    soma = sum(int(d) * pesos[i % 8] for i, d in enumerate(reversed(base)))
+    resto = soma % 11
+    return base + str(0 if resto < 2 else 11 - resto)
+
+
+def nfse(numero=42, emitente="EXEMPLO SERVICOS LTDA", cnpj=CNPJ_EMITENTE, tomador="", chave_nacional=False) -> str:
+    identificador = chave_nfse(numero, cnpj) if chave_nacional else f"3550308{cnpj}0000000000{numero:013d}00000000"
+    toma = f"<toma><CNPJ>{tomador}</CNPJ><xNome>TOMADOR EXEMPLO LTDA</xNome></toma>" if tomador else ""
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <NFSe xmlns="{NFSE}">
-    <infNFSe versao="1.01" Id="NFS3550308{CNPJ_EMITENTE}0000000000{numero:013d}00000000">
+    <infNFSe versao="1.01" Id="NFS{identificador}">
         <xLocEmi>SAO PAULO</xLocEmi><xLocPrestacao>SAO PAULO</xLocPrestacao><nNFSe>{numero}</nNFSe>
         <verAplic>1.0</verAplic><ambGer>1</ambGer><tpEmis>1</tpEmis><procEmi>1</procEmi><cStat>100</cStat>
         <dhProc>2026-01-15T10:00:00-03:00</dhProc><nDFSe>1</nDFSe>
-        <emit><CNPJ>{CNPJ_EMITENTE}</CNPJ><xNome>{emitente}</xNome></emit>
+        <emit><CNPJ>{cnpj}</CNPJ><xNome>{emitente}</xNome></emit>
         <valores><vLiq>500.00</vLiq></valores>
         <DPS versao="1.00">
             <infDPS Id="DPS{numero}">
                 <tpAmb>1</tpAmb><dhEmi>2026-01-15T09:00:00-03:00</dhEmi><nDPS>{numero}</nDPS><serie>1</serie>
                 <dCompet>2026-01-15</dCompet>
-                <prest><CNPJ>{CNPJ_EMITENTE}</CNPJ></prest>
+                <prest><CNPJ>{cnpj}</CNPJ></prest>{toma}
                 <serv><cServ><cTribNac>010501</cTribNac><xDescServ>SERVICO DE EXEMPLO</xDescServ></cServ></serv>
                 <valores><vServPrest><vServ>500.00</vServ></vServPrest></valores>
             </infDPS>

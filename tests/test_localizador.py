@@ -5,6 +5,7 @@ import pytest
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.localizador import (
     IMAGEM,
+    SoEmSubpastas,
     eh_pasta_saida,
     filtrar_pdfs_selecionados,
     listar_pdfs_da_pasta,
@@ -149,3 +150,14 @@ def test_pasta_sem_imagens_tem_mensagem_propria(tmp_path, criar_pdf):
     criar_pdf(tmp_path / "doc.pdf")
     with pytest.raises(ErroUnePDF, match="Nenhuma imagem encontrada"):
         montar_selecao([tmp_path], tipo=IMAGEM)
+
+
+def test_pasta_so_com_subpastas_avisa_quais_tem_pdfs(tmp_path, criar_pdf):
+    criar_pdf(tmp_path / "012026" / "EMITIDAS" / "1.pdf")
+    criar_pdf(tmp_path / "012026" / "RECEBIDAS" / "2.pdf")
+    criar_pdf(tmp_path / "012026" / "UnePDF" / "unido.pdf")
+    (tmp_path / "012026" / "vazia").mkdir()
+    with pytest.raises(SoEmSubpastas) as erro:
+        montar_selecao([tmp_path / "012026"])
+    assert [p.name for p in erro.value.subpastas] == ["EMITIDAS", "RECEBIDAS"]
+    assert erro.value.pasta == tmp_path / "012026"

@@ -18,7 +18,7 @@ from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.dialogos import mostrar_erro
 from unepdf.ui.janela_principal import JanelaPrincipal
 from unepdf.ui.tema import aplicar_tema
-from unepdf.utils import atualizacao
+from unepdf.utils import atualizacao, menu_contexto
 from unepdf.utils.instancia_unica import InstanciaUnica
 from unepdf.utils.logs import configurar_logs
 from unepdf.utils.recursos import caminho_recurso
@@ -62,6 +62,11 @@ def arquivos_da_linha_de_comando(argumentos: list[str]) -> list[Path]:
     return [Path(a) for a in argumentos if not a.startswith("--")]
 
 
+def ferramenta_da_linha_de_comando(argumentos: list[str]) -> str:
+    """Ferramenta que recebe os arquivos: a separação de notas com --separar, senão o Unir PDFs."""
+    return "separar" if menu_contexto.SEPARAR in argumentos else "unir"
+
+
 def _verificar_nova_versao(janela: JanelaPrincipal) -> None:
     def consultar() -> None:
         janela.nova_versao.emit(atualizacao.procurar(__version__))
@@ -72,11 +77,12 @@ def _verificar_nova_versao(janela: JanelaPrincipal) -> None:
 def executar() -> int:
     configurar_logs()
     arquivos = arquivos_da_linha_de_comando(sys.argv[1:])
+    ferramenta = ferramenta_da_linha_de_comando(sys.argv[1:])
 
     # Com o app já aberto, esta cópia só entrega os arquivos à janela existente e fecha
     instancia = InstanciaUnica()
     if not instancia.tornar_principal():
-        mensagem = {"caminhos": [str(c) for c in arquivos]}
+        mensagem = {"caminhos": [str(c) for c in arquivos], "ferramenta": ferramenta}
         if instancia.enviar(mensagem):
             return 0
         log.warning("Abrindo uma segunda janela: a primeira não respondeu")
@@ -105,13 +111,14 @@ def executar() -> int:
     def ao_receber(mensagem: dict) -> None:
         caminhos = mensagem.get("caminhos") or []
         if caminhos:
-            janela.arquivos_externos.emit(list(caminhos))
+            # Mensagens de versões anteriores não dizem a ferramenta: vão para o Unir PDFs
+            janela.arquivos_externos.emit(list(caminhos), str(mensagem.get("ferramenta") or "unir"))
         else:
             janela.trazer_para_frente.emit()
 
     instancia.escutar(ao_receber)
     if arquivos:
-        janela.receber_externos(arquivos)
+        janela.receber_externos(arquivos, ferramenta)
     if contexto.config.verificar_atualizacoes:
         _verificar_nova_versao(janela)
     return app.exec()

@@ -75,6 +75,24 @@ class DocumentoRenderizavel:
                 texto_pagina.close()
                 pagina.close()
 
+    def texto_com_posicoes(self, indice: int) -> tuple[str, list[tuple[float, float, float, float]] | None]:
+        """Texto da página e a caixa (esquerda, base, direita, topo) de cada caractere, na mesma ordem.
+
+        As caixas voltam None quando não batem um a um com o texto, o que acontece com alguns PDFs.
+        """
+        with _trava_pdfium:
+            pagina = self._documento[indice]
+            texto_pagina = pagina.get_textpage()
+            try:
+                total = texto_pagina.count_chars()
+                texto = texto_pagina.get_text_range(0, total)
+                if len(texto) != total:
+                    return texto, None
+                return texto, [texto_pagina.get_charbox(i) for i in range(total)]
+            finally:
+                texto_pagina.close()
+                pagina.close()
+
     def caixa_visivel(self, indice: int) -> tuple[float, float, float, float]:
         """Área visível da página (esquerda, base, direita, topo), em pontos, sem considerar a rotação."""
         with _trava_pdfium:

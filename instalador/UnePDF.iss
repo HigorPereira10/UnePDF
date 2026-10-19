@@ -49,7 +49,7 @@ Name: "ghostscript"; Description: "Ghostscript: conversão para PDF/A e compress
 Name: "tesseract"; Description: "Tesseract: OCR, com português e inglês (licença Apache)"; Types: completa
 
 [Tasks]
-Name: "menuexplorer"; Description: "Adicionar ""Unir com UnePDF"" ao botão direito do Explorer"
+Name: "menuexplorer"; Description: "Adicionar ""Unir com UnePDF"" e ""Separar emitidas e recebidas"" ao botão direito do Explorer"
 Name: "atalho"; Description: "Criar atalho na área de trabalho"; Flags: unchecked
 
 [InstallDelete]
@@ -81,6 +81,11 @@ Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Unir"; ValueType: st
 Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Unir"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\UnePDF.exe"; Tasks: menuexplorer
 Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Unir"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: menuexplorer
 Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Unir\command"; ValueType: string; ValueName: ""; ValueData: """{app}\UnePDF.exe"" --unir ""%1"""; Tasks: menuexplorer
+Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Separar"; Flags: uninsdeletekey; Tasks: menuexplorer
+Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Separar"; ValueType: string; ValueName: "MUIVerb"; ValueData: "Separar emitidas e recebidas (UnePDF)"; Tasks: menuexplorer
+Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Separar"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\UnePDF.exe"; Tasks: menuexplorer
+Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Separar"; ValueType: string; ValueName: "MultiSelectModel"; ValueData: "Player"; Tasks: menuexplorer
+Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Separar\command"; ValueType: string; ValueName: ""; ValueData: """{app}\UnePDF.exe"" --separar ""%1"""; Tasks: menuexplorer
 
 [Run]
 Filename: "{app}\UnePDF.exe"; Description: "Abrir o UnePDF"; Flags: nowait postinstall skipifsilent

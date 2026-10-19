@@ -63,6 +63,8 @@ class DocumentoFiscal:
     cnpj_emitente: str
     sequencia: int = 1  # sequência do evento, na carta de correção
     endereco_emitente: dict[str, str] = field(default_factory=dict)
+    # CNPJ ou CPF de todos os envolvidos (emitente, destinatário, tomador...), para separar emitidas e recebidas
+    participantes: frozenset[str] = frozenset()
 
     @property
     def identificador(self) -> str:
@@ -132,6 +134,16 @@ def _endereco(emit: Element, ns: str) -> dict[str, str]:
     }
 
 
+def _participantes(inf: Element, ns: str, papeis: tuple[str, ...]) -> frozenset[str]:
+    encontrados = set()
+    for elemento in inf.iter():
+        if _namespace(elemento.tag) == ns and _local(elemento.tag) in papeis:
+            documento = _texto(elemento, "CNPJ", ns) or _texto(elemento, "CPF", ns)
+            if documento:
+                encontrados.add(documento)
+    return frozenset(encontrados)
+
+
 def _evento(raiz: Element, ns: str, campo_chave: str, caminho: Path, texto: str) -> DocumentoFiscal | EventoCancelamento:
     inf = raiz.find(f".//{{{ns}}}infEvento")
     tipo_evento = _texto(inf, "tpEvento", ns)
@@ -198,6 +210,7 @@ def ler_xml(caminho: Path) -> DocumentoFiscal | EventoCancelamento:
                 emitente=_texto(emit, "xNome", NFE),
                 cnpj_emitente=_texto(emit, "CNPJ", NFE) or _texto(emit, "CPF", NFE),
                 endereco_emitente=_endereco(emit, NFE) if emit is not None else {},
+                participantes=_participantes(inf, NFE, ("emit", "dest")),
             )
         if raiz.find(f".//{{{NFE}}}infEvento") is not None:
             return _evento(raiz, NFE, "chNFe", caminho, texto)
@@ -212,6 +225,7 @@ def ler_xml(caminho: Path) -> DocumentoFiscal | EventoCancelamento:
                 caminho, TipoDocumento.DACTE, texto, inf.get("Id", "").removeprefix("CTe"),
                 numero=_inteiro(_texto(inf, "ide/nCT", CTE)), serie=_inteiro(_texto(inf, "ide/serie", CTE)),
                 emitente=_texto(emit, "xNome", CTE), cnpj_emitente=_texto(emit, "CNPJ", CTE),
+                participantes=_participantes(inf, CTE, ("emit", "rem", "exped", "receb", "dest", "toma4")),
             )
         if raiz.find(f".//{{{CTE}}}infEvento") is not None:
             return _evento(raiz, CTE, "chCTe", caminho, texto)
@@ -224,6 +238,7 @@ def ler_xml(caminho: Path) -> DocumentoFiscal | EventoCancelamento:
                 caminho, TipoDocumento.DAMDFE, texto, inf.get("Id", "").removeprefix("MDFe"),
                 numero=_inteiro(_texto(inf, "ide/nMDF", MDFE)), serie=_inteiro(_texto(inf, "ide/serie", MDFE)),
                 emitente=_texto(emit, "xNome", MDFE), cnpj_emitente=_texto(emit, "CNPJ", MDFE),
+                participantes=_participantes(inf, MDFE, ("emit",)),
             )
         if raiz.find(f".//{{{MDFE}}}infEvento") is not None:
             raise XmlNaoReconhecido("evento de MDF-e, sem representação em PDF")
@@ -237,6 +252,7 @@ def ler_xml(caminho: Path) -> DocumentoFiscal | EventoCancelamento:
                 numero=_inteiro(_texto(inf, "nNFSe", NFSE)),
                 serie=_inteiro(_texto(inf, "DPS/infDPS/serie", NFSE)),
                 emitente=_texto(emit, "xNome", NFSE), cnpj_emitente=_texto(emit, "CNPJ", NFSE),
+                participantes=_participantes(inf, NFSE, ("emit", "toma", "interm")),
             )
         raise XmlNaoReconhecido("XML do padrão nacional da NFS-e sem a nota autorizada (só a DPS ou um evento)")
 

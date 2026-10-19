@@ -42,6 +42,11 @@ class Configuracoes:
     # Última pasta de onde um certificado foi aberto (o certificado e a senha nunca são guardados)
     pasta_certificados: str = ""
     verificar_atualizacoes: bool = True
+    # Separar emitidas e recebidas: nomes das subpastas trocados pelo usuário, por tipo de documento
+    # ({"DANFSE": {"emitidas": "PRESTADAS", "recebidas": "TOMADAS"}}), e a empresa (CNPJ ou CPF)
+    # de cada pasta que o usuário já confirmou
+    separar_pastas: dict = field(default_factory=dict)
+    separar_empresas: dict = field(default_factory=dict)
 
 
 def pasta_saida_valida(nome: str) -> bool:
@@ -85,6 +90,17 @@ def _validar(nome: str, valor: object) -> object | None:
         if not isinstance(valor, dict):
             return None
         return {chave: v for chave, v in valor.items() if isinstance(chave, str) and isinstance(v, (str, bool))}
+    if nome == "separar_pastas":
+        if not isinstance(valor, dict):
+            return None
+        return {
+            tipo: {lado: n.strip() for lado, n in nomes.items() if isinstance(n, str) and pasta_saida_valida(n)}
+            for tipo, nomes in valor.items() if isinstance(tipo, str) and isinstance(nomes, dict)
+        }
+    if nome == "separar_empresas":
+        if not isinstance(valor, dict):
+            return None
+        return {pasta: doc for pasta, doc in valor.items() if isinstance(pasta, str) and isinstance(doc, str) and doc.isalnum()}
     if isinstance(getattr(Configuracoes, nome), bool):
         return valor if isinstance(valor, bool) else None
     if not isinstance(valor, str):

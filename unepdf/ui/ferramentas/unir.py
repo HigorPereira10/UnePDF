@@ -23,7 +23,14 @@ from PySide6.QtWidgets import (
 )
 
 from unepdf.core.erros import ErroUnePDF, OperacaoCancelada
-from unepdf.core.localizador import OrdemArquivos, Selecao, datas_modificacao, montar_selecao, ordenar
+from unepdf.core.localizador import (
+    OrdemArquivos,
+    Selecao,
+    SoEmSubpastas,
+    datas_modificacao,
+    montar_selecao,
+    ordenar,
+)
 from unepdf.core.modelos import Resultado
 from unepdf.core.nomenclatura import destino_padrao
 from unepdf.core.unir import unir
@@ -294,7 +301,10 @@ class TelaUnir(TelaFerramenta):
     def _ao_falhar_preparo(self, erro: BaseException) -> None:
         self._timer_progresso.stop()
         self.estados.setCurrentWidget(self.area)
-        if isinstance(erro, ErroUnePDF):
+        if isinstance(erro, SoEmSubpastas):
+            # Ex.: notas já separadas em emitidas e recebidas. O Unir em lote gera um unificado para cada subpasta
+            self.abrir_ferramenta.emit("unir_lote", [erro.pasta])
+        elif isinstance(erro, ErroUnePDF):
             self.area.mostrar_aviso(str(erro))
         else:
             mostrar_erro(self, erro)

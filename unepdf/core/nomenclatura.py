@@ -38,8 +38,13 @@ def nome_saida(base: Path, perfil: Perfil = Perfil.GENERICO) -> str:
             -> "DANFE - 0001-EMPRESA EXEMPLO LTDA - 012026.pdf"
         ...\\DANFSE\\0002-EXEMPLO SERVICOS S\\S LTDA\\012026  (barra do "S/S" virou subpasta)
             -> "DANFSE - 0002-EXEMPLO SERVICOS S-S LTDA - 012026.pdf"
+    Subpasta de uma competência (notas separadas em emitidas e recebidas):
+        ...\\DANFSE\\0001-EMPRESA EXEMPLO LTDA\\012026\\PRESTADAS
+            -> "DANFSE - 0001-EMPRESA EXEMPLO LTDA - 012026 - PRESTADAS.pdf"
     Fora do padrão de competência, o perfil Notas fiscais usa a regra genérica.
     """
+    if perfil is Perfil.NOTAS_FISCAIS and subpasta_de_competencia(base):
+        return f"{nome_saida(base.parent, perfil).removesuffix('.pdf')} - {limpar_nome(base.name)}.pdf"
     if perfil is not Perfil.NOTAS_FISCAIS or not PADRAO_COMPETENCIA.match(base.name):
         return f"{limpar_nome(base.name) or 'PDF'} - UNIFICADO.pdf"
 
@@ -62,12 +67,23 @@ def nome_saida(base: Path, perfil: Perfil = Perfil.GENERICO) -> str:
     return " - ".join(limpo for limpo in map(limpar_nome, pedacos) if limpo) + ".pdf"
 
 
+def subpasta_de_competencia(base: Path) -> bool:
+    """Pasta dentro de uma competência (ex.: 012026\\EMITIDAS), que é onde ficam as notas separadas."""
+    return not PADRAO_COMPETENCIA.match(base.name) and bool(PADRAO_COMPETENCIA.match(base.parent.name))
+
+
 def destino_padrao(
     base: Path,
     perfil: Perfil = Perfil.GENERICO,
     pasta_saida: str = PASTA_SAIDA_PADRAO,
 ) -> Path:
-    """Caminho completo do PDF unificado: <pasta base>\\<pasta de saída>\\<nome>.pdf"""
+    """Caminho completo do PDF unificado: <pasta base>\\<pasta de saída>\\<nome>.pdf
+
+    No perfil Notas fiscais, as subpastas de uma competência gravam na pasta de saída da competência,
+    para os unificados de emitidas e recebidas ficarem juntos.
+    """
+    if perfil is Perfil.NOTAS_FISCAIS and subpasta_de_competencia(base):
+        return base.parent / pasta_saida / nome_saida(base, perfil)
     return base / pasta_saida / nome_saida(base, perfil)
 
 

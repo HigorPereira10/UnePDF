@@ -243,3 +243,12 @@ def test_cancelar_mantem_os_pdfs_prontos(tmp_path):
 
     assert len(resultado.gerados) == 2 and resultado.pendentes == 1
     assert resultado.cancelado
+
+
+def test_participantes_de_cada_documento(tmp_path):
+    nota = ler_xml(x.gravar(tmp_path / "nfe.xml", x.nfe(cnpj_dest="99888777000166")))
+    assert nota.participantes == {x.CNPJ_EMITENTE, "99888777000166"}
+    conhecimento = ler_xml(x.gravar(tmp_path / "cte.xml", x.cte()))
+    assert conhecimento.participantes == {x.CNPJ_EMITENTE, "44555666000199", "77888999000155"}
+    servico = ler_xml(x.gravar(tmp_path / "nfse.xml", x.nfse(tomador="99888777000166")))
+    assert servico.participantes == {x.CNPJ_EMITENTE, "99888777000166"}

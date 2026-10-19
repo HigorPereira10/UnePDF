@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
@@ -21,6 +21,9 @@ class TelaFerramenta(QWidget):
 
     # Ferramentas que recebem arquivos arrastados para qualquer ponto da janela
     aceita_arquivos = False
+
+    # Pede à janela para abrir outra ferramenta com estes caminhos (chave da ferramenta, caminhos)
+    abrir_ferramenta = Signal(str, list)
 
     def __init__(self, ferramenta: Ferramenta, contexto: ContextoApp):
         super().__init__()

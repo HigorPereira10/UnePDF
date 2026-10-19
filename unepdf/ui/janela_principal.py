@@ -43,7 +43,7 @@ ESPERA_ARQUIVOS_EXTERNOS_MS = 600
 
 class JanelaPrincipal(QMainWindow):
     # Podem ser emitidos de outras threads: o Qt entrega na thread da interface
-    arquivos_externos = Signal(list)
+    arquivos_externos = Signal(list, str)  # caminhos e a chave da ferramenta que os recebe
     nova_versao = Signal(object)
     trazer_para_frente = Signal()
 
@@ -81,7 +81,7 @@ class JanelaPrincipal(QMainWindow):
         self._centralizar_na_tela()
         self.setAcceptDrops(True)
 
-        self._externos: list[Path] = []
+        self._externos: dict[str, list[Path]] = {}
         self._timer_externos = QTimer(self)
         self._timer_externos.setSingleShot(True)
         self._timer_externos.timeout.connect(self._entregar_externos)
@@ -171,6 +171,7 @@ class JanelaPrincipal(QMainWindow):
             if chave not in self.telas:
                 ferramenta = buscar(chave)
                 self.telas[chave] = ferramenta.tela(ferramenta, self.contexto)
+                self.telas[chave].abrir_ferramenta.connect(self._abrir_com_caminhos)
                 self.pilha.addWidget(self.telas[chave])
             tela = self.telas[chave]
         self.pilha.setCurrentWidget(tela)
@@ -182,6 +183,11 @@ class JanelaPrincipal(QMainWindow):
             grupo.marcar_ativo(nome == categoria)
             if nome == categoria:
                 grupo.expandir(True)
+
+    def _abrir_com_caminhos(self, chave: str, caminhos: list) -> None:
+        self.abrir(chave)
+        if not self.telas[chave].executor.em_execucao:
+            self.telas[chave].receber_caminhos(caminhos)
 
     def _tela_para_arquivos(self) -> TelaFerramenta | None:
         """Tela que recebe arquivos soltos na janela. Na tela inicial, eles vão para Unir PDFs."""
@@ -209,24 +215,25 @@ class JanelaPrincipal(QMainWindow):
 
     # Arquivos vindos de fora (Explorer, ícone do programa) e aviso de nova versão
 
-    def receber_externos(self, caminhos: list) -> None:
-        """Junta os arquivos que chegam quase ao mesmo tempo e entrega todos de uma vez ao Unir PDFs."""
-        self._externos.extend(Path(c) for c in caminhos)
+    def receber_externos(self, caminhos: list, ferramenta: str = CHAVE_UNIR) -> None:
+        """Junta os arquivos que chegam quase ao mesmo tempo e entrega todos de uma vez à ferramenta
+        (o Unir PDFs, ou a separação de notas pelo item do Explorer)."""
+        self._externos.setdefault(ferramenta, []).extend(Path(c) for c in caminhos)
         self._timer_externos.start(ESPERA_ARQUIVOS_EXTERNOS_MS)
 
     def _entregar_externos(self) -> None:
-        unir = self.telas.get(CHAVE_UNIR)
-        if unir and unir.executor.em_execucao:
-            # Uma união já está em andamento: os arquivos esperam ela terminar
-            self._timer_externos.start(1000)
-            return
-        caminhos = list(dict.fromkeys(self._externos))
-        self._externos.clear()
-        log.info("%d arquivo(s) recebidos de fora do app", len(caminhos))
-        self._para_frente()
-        if caminhos:
-            self.abrir(CHAVE_UNIR)
-            self.telas[CHAVE_UNIR].receber_caminhos(caminhos)
+        for ferramenta in list(self._externos):
+            tela = self.telas.get(ferramenta)
+            if tela and tela.executor.em_execucao:
+                # A ferramenta está trabalhando: os arquivos esperam ela terminar
+                self._timer_externos.start(1000)
+                continue
+            caminhos = list(dict.fromkeys(self._externos.pop(ferramenta)))
+            log.info("%d arquivo(s) recebidos de fora do app para %s", len(caminhos), ferramenta)
+            self._para_frente()
+            if caminhos:
+                self.abrir(ferramenta)
+                self.telas[ferramenta].receber_caminhos(caminhos)
 
     def _para_frente(self) -> None:
         if self.isMinimized():

@@ -55,7 +55,7 @@ instalador novo por cima: as configurações são mantidas.
 
 | Categoria | Ferramentas |
 |---|---|
-| Organizar | Unir PDFs, Unir em lote, Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
+| Organizar | Unir PDFs, Unir em lote, Separar emitidas e recebidas (notas fiscais), Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
 | Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Office para PDF (Word, Excel e PowerPoint), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
 | Segurança | Proteger com senha (AES de 256 bits), Remover senha e Assinar PDF (certificado digital A1) |
@@ -111,6 +111,40 @@ C:\Notas\DANFE\0001-EMPRESA EXEMPLO LTDA\012026
 Os tipos reconhecidos são DANFE, DANFSE, DANFCE e DACTE, e a competência fica no formato `MMAAAA`.
 Quando o nome da empresa tem uma barra (como em "S/S"), que o Windows transforma em várias pastas, as
 partes são juntadas com hífen.
+
+### Separar emitidas e recebidas
+
+Para pastas de notas fiscais baixadas por sistemas de captura ou pelos portais, em que as notas de uma
+empresa ficam todas juntas. Escolha a pasta do mês (ou várias) e o UnePDF move cada nota para a
+subpasta do seu lado, criada dentro dela:
+
+```
+C:\Notas\DANFSE\0001-EMPRESA EXEMPLO LTDA\012026
+    ├── PRESTADAS
+    └── TOMADAS
+```
+
+- **quem emitiu** cada nota vem da chave de acesso, que traz o CNPJ do emitente e fica no nome do
+  arquivo, no texto do PDF (DANFE, DANFCe, DACTE, DANFSe) ou no XML;
+- **a empresa da pasta** é descoberta pelas próprias notas, sem cadastro: é o CNPJ que aparece em todas,
+  ora como emitente, ora como destinatário ou tomador. Quando isso não basta (por exemplo, todas as
+  notas do mês com o mesmo fornecedor), o app usa os outros meses, o CNPJ ou o nome da pasta e, por
+  último, pergunta uma vez e guarda a resposta;
+- **a mesma nota salva duas vezes** com nomes diferentes fica uma só: a cópia idêntica é apagada e uma
+  versão diferente da mesma nota vai para `UnePDF\Repetidas`. Isso também resolve a nota que o sistema
+  de captura grava de novo depois da separação;
+- antes de mexer em qualquer arquivo, o app mostra a prévia de cada pasta. Notas que ele não consegue
+  classificar com certeza ficam onde estão, com o motivo, e a separação pode ser **desfeita** depois;
+- os nomes das subpastas mudam com o tipo de documento (EMITIDAS/RECEBIDAS, PRESTADAS/TOMADAS,
+  EMITIDOS/RECEBIDOS) e podem ser trocados nas configurações;
+- na prévia, ao lado do CNPJ escolhido aparece a linha da nota com o nome da empresa da pasta. Se o
+  nome aparece junto de outro CNPJ, a pasta fica marcada com **Confira** antes de qualquer arquivo mudar
+  de lugar;
+- também dá para começar pelo Explorer: selecione as pastas dos meses, clique com o botão direito e
+  escolha **Separar emitidas e recebidas (UnePDF)**.
+
+Com o perfil Notas fiscais, unir a pasta do mês depois da separação gera um PDF para cada subpasta,
+como `DANFSE - 0001-EMPRESA EXEMPLO LTDA - 012026 - PRESTADAS.pdf`.
 
 ### Unir com UnePDF, direto do Explorer
 
@@ -267,8 +301,9 @@ com código, veja o [CONTRIBUTING.md](CONTRIBUTING.md).
 are never uploaded anywhere. It was born in an accounting office to merge hundreds of invoices into a
 single PDF, and grew into a full set of everyday PDF tools:
 
-- **Organize**: merge PDFs (also one merged file per subfolder, in batch), split, reorder, rotate,
-  remove and extract pages with thumbnails;
+- **Organize**: merge PDFs (also one merged file per subfolder, in batch), sort a folder of Brazilian
+  invoices into issued and received (by the CNPJ in the access key, with no customer list), split,
+  reorder, rotate, remove and extract pages with thumbnails;
 - **Convert**: Brazilian electronic invoice XML to PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe and
   correction letters), Word, Excel and PowerPoint to PDF, images to PDF and back, PDF to text and PDF to
   PDF/A;
