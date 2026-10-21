@@ -248,8 +248,8 @@ class TelaConfiguracoes(QWidget):
         self.check_atualizacoes.toggled.connect(self._alterar_atualizacoes)
         secao.corpo.addWidget(self.check_atualizacoes)
         secao.corpo.addWidget(_texto_ajuda(
-            "Ao abrir, o app consulta a página do projeto no GitHub para saber a versão mais recente. "
-            "Nenhum arquivo é enviado."
+            "Ao abrir, e a cada quatro horas com o app aberto, ele consulta a página do projeto no GitHub "
+            "para saber a versão mais recente. Nenhum arquivo é enviado."
         ))
         return secao
 

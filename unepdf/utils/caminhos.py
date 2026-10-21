@@ -21,6 +21,11 @@ def pasta_logs() -> Path:
     return _pasta_do_sistema("LOCALAPPDATA", "AppData/Local") / APP_NOME / "logs"
 
 
+def pasta_atualizacao() -> Path:
+    """Onde o instalador de uma versão nova é baixado antes de rodar."""
+    return _pasta_do_sistema("LOCALAPPDATA", "AppData/Local") / APP_NOME / "atualizacao"
+
+
 def pasta_separacoes() -> Path:
     """Registros das separações de notas, usados para desfazer."""
     return _pasta_do_sistema("LOCALAPPDATA", "AppData/Local") / APP_NOME / "separacoes"

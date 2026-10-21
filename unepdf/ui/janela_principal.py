@@ -8,7 +8,9 @@ from PySide6.QtCore import QSize, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QDragEnterEvent, QDropEvent, QGuiApplication, QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
+    QApplication,
     QButtonGroup,
+    QDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -22,14 +24,17 @@ from PySide6.QtWidgets import (
 
 from unepdf import __version__
 from unepdf.constantes import APP_NOME
+from unepdf.ui.atualizacao import DialogoAtualizacao, FaixaNovaVersao
 from unepdf.ui.componentes import GrupoLateral, caminhos_locais
 from unepdf.ui.contexto import ContextoApp
-from unepdf.ui.dialogos import perguntar
+from unepdf.ui.dialogos import mostrar_erro, perguntar
 from unepdf.ui.ferramentas import FERRAMENTAS, TelaFerramenta, buscar, por_categoria
 from unepdf.ui.tela_configuracoes import TelaConfiguracoes
 from unepdf.ui.tela_inicial import TelaInicial
 from unepdf.ui.tema import CORES
+from unepdf.utils import atualizacao
 from unepdf.utils.atualizacao import NovaVersao
+from unepdf.utils.caminhos import pasta_logs
 from unepdf.utils.recursos import caminho_recurso
 
 log = logging.getLogger(__name__)
@@ -69,12 +74,23 @@ class JanelaPrincipal(QMainWindow):
         self._botoes_por_chave: dict[str, QPushButton] = {}
         self._grupos: dict[str, GrupoLateral] = {}
 
+        self._nova_versao: NovaVersao | None = None
+        self.faixa_versao = FaixaNovaVersao()
+        self.faixa_versao.atualizar.connect(self._atualizar)
+        self.faixa_versao.ver_pagina.connect(self._abrir_pagina_nova_versao)
+        conteudo = QWidget()
+        layout_conteudo = QVBoxLayout(conteudo)
+        layout_conteudo.setContentsMargins(0, 0, 0, 0)
+        layout_conteudo.setSpacing(0)
+        layout_conteudo.addWidget(self.faixa_versao)
+        layout_conteudo.addWidget(self.pilha, 1)
+
         central = QWidget()
         layout = QHBoxLayout(central)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self._montar_barra_lateral())
-        layout.addWidget(self.pilha, 1)
+        layout.addWidget(conteudo, 1)
         self.setCentralWidget(central)
 
         self.abrir(CHAVE_INICIO)
@@ -113,8 +129,7 @@ class JanelaPrincipal(QMainWindow):
         self.aviso_versao.setObjectName("avisoVersao")
         self.aviso_versao.setCursor(Qt.CursorShape.PointingHandCursor)
         self.aviso_versao.hide()
-        self._pagina_nova_versao = ""
-        self.aviso_versao.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(self._pagina_nova_versao)))
+        self.aviso_versao.clicked.connect(self._atualizar)
 
         # A lista de ferramentas rola quando a janela é baixa; logo e configurações ficam sempre visíveis
         lista = QWidget()
@@ -247,10 +262,52 @@ class JanelaPrincipal(QMainWindow):
     def mostrar_nova_versao(self, nova: NovaVersao | None) -> None:
         if nova is None:
             return
-        self._pagina_nova_versao = nova.pagina
+        self._nova_versao = nova
+        pelo_app = self._atualiza_pelo_app()
         self.aviso_versao.setText(f"Nova versão {nova.versao} disponível")
-        self.aviso_versao.setToolTip("Abre a página de download no navegador")
+        self.aviso_versao.setToolTip("Atualiza o UnePDF" if pelo_app else "Abre a página de download no navegador")
         self.aviso_versao.show()
+        self.faixa_versao.mostrar(nova, pelo_app)
+
+    def _atualiza_pelo_app(self) -> bool:
+        return bool(self._nova_versao and self._nova_versao.instalador and atualizacao.pode_atualizar_pelo_app())
+
+    def _abrir_pagina_nova_versao(self) -> None:
+        if self._nova_versao:
+            QDesktopServices.openUrl(QUrl(self._nova_versao.pagina))
+
+    def _atualizar(self) -> None:
+        if not self._nova_versao:
+            return
+        if not self._atualiza_pelo_app():
+            self._abrir_pagina_nova_versao()
+            return
+        if any(tela.executor.em_execucao for tela in self.telas.values()):
+            self.faixa_versao.texto.setText(
+                "Uma ferramenta ainda está trabalhando. Espere ela terminar e clique em Atualizar agora de novo."
+            )
+            self.faixa_versao.show()
+            return
+        instalador = self._baixar_atualizacao(self._nova_versao)
+        if instalador is None:
+            return
+        try:
+            atualizacao.instalar_depois_de_fechar(instalador, pasta_logs() / "atualizacao.log")
+        except OSError as erro:
+            log.exception("Não foi possível iniciar a atualização")
+            mostrar_erro(self, erro, "Não foi possível atualizar")
+            return
+        self._fechar_para_atualizar()
+
+    def _baixar_atualizacao(self, nova: NovaVersao) -> Path | None:
+        """Mostra o download com progresso. Os testes substituem este método."""
+        dialogo = DialogoAtualizacao(self, nova)
+        return dialogo.instalador if dialogo.exec() == QDialog.DialogCode.Accepted else None
+
+    def _fechar_para_atualizar(self) -> None:
+        log.info("Fechando para atualizar para a versão %s", self._nova_versao.versao if self._nova_versao else "?")
+        self.close()
+        QApplication.quit()
 
     def _centralizar_na_tela(self) -> None:
         tela = self.screen() or QGuiApplication.primaryScreen()

@@ -63,6 +63,7 @@ def folha_de_estilo(c: Cores = CORES) -> str:
         border-radius: 8px; padding: 6px 8px; font-size: 9pt; margin-bottom: 6px;
     }}
     QPushButton#avisoVersao:hover {{ background: {c.cartao}; }}
+    #faixaVersao {{ background: {c.cartao}; border-bottom: 1px solid {c.destaque_2}; }}
 
     #titulo {{ font-size: 20pt; font-weight: 600; }}
     #tituloCategoria {{ color: {c.texto_suave}; font-size: 11pt; font-weight: 600; }}

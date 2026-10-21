@@ -48,8 +48,11 @@ Requer Windows 10 ou 11, de 64 bits.
 > e depois em **Executar assim mesmo**. O código-fonte de tudo o que vai no instalador está neste
 > repositório.
 
-Quando sai uma versão nova, o próprio UnePDF avisa na barra lateral. Para atualizar, basta rodar o
-instalador novo por cima: as configurações são mantidas.
+Quando sai uma versão nova, o próprio UnePDF avisa no topo da janela, a cada abertura, até você
+atualizar. Na versão instalada, o botão **Atualizar agora** baixa o instalador novo, confere se o
+arquivo é o publicado (pelo SHA-256 informado pelo GitHub), fecha o app, instala sem perguntas e abre
+de novo já atualizado. As configurações são mantidas. Na versão portátil, o aviso leva à página de
+download. Rodar o instalador novo por cima também funciona.
 
 ## Ferramentas
 
@@ -70,8 +73,9 @@ instalador novo por cima: as configurações são mantidas.
 Todo o processamento acontece no próprio computador. O UnePDF só usa a internet em dois casos, e
 nenhum deles envia documentos:
 
-- **aviso de nova versão**: ao abrir, consulta a página de versões deste projeto no GitHub para saber
-  se há uma versão mais nova (dá para desligar em Configurações);
+- **aviso de nova versão**: ao abrir (e a cada quatro horas com o app aberto), consulta a página de
+  versões deste projeto no GitHub para saber se há uma versão mais nova; o instalador novo só é
+  baixado quando você clica em **Atualizar agora** (a consulta dá para desligar em Configurações);
 - **Assinar PDF**: consulta a certificadora para confirmar que o certificado não foi revogado (sem
   internet, a assinatura é feita mesmo assim).
 
@@ -317,8 +321,9 @@ Download the installer or the portable `.zip` from the
 The installer is not code-signed yet, so Windows SmartScreen may show a warning: click **More info**
 and then **Run anyway**. The interface is in Brazilian Portuguese.
 
-The only network access is an optional check for new versions on GitHub and, when signing, the
-certificate revocation check with the certificate authority. Documents are never sent.
+The only network access is an optional check for new versions on GitHub (with a one-click update
+that downloads the new installer, verifies its SHA-256 and installs it silently) and, when signing,
+the certificate revocation check with the certificate authority. Documents are never sent.
 
 ## Licença
 

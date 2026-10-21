@@ -89,3 +89,11 @@ Root: HKA; Subkey: "Software\Classes\Directory\shell\UnePDF.Separar\command"; Va
 
 [Run]
 Filename: "{app}\UnePDF.exe"; Description: "Abrir o UnePDF"; Flags: nowait postinstall skipifsilent
+; Atualização pelo próprio app: instala em silêncio e abre o UnePDF de novo no fim
+Filename: "{app}\UnePDF.exe"; Flags: nowait; Check: AbrirDepoisDeAtualizar
+
+[Code]
+function AbrirDepoisDeAtualizar: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:abrir|0}') = '1');
+end;

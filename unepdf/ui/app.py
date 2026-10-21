@@ -6,7 +6,7 @@ import sys
 import threading
 from pathlib import Path
 
-from PySide6.QtCore import QLibraryInfo, QTranslator
+from PySide6.QtCore import QLibraryInfo, QTimer, QTranslator
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
@@ -25,6 +25,8 @@ from unepdf.utils.recursos import caminho_recurso
 from unepdf.utils.sistema import configurar_id_app
 
 log = logging.getLogger(__name__)
+
+INTERVALO_VERIFICACAO_MS = 4 * 60 * 60 * 1000  # nova consulta de versão a cada 4 horas com o app aberto
 
 
 def tratar_erro_nao_capturado(tipo, erro, rastro) -> None:
@@ -74,6 +76,18 @@ def _verificar_nova_versao(janela: JanelaPrincipal) -> None:
     threading.Thread(target=consultar, name="nova-versao", daemon=True).start()
 
 
+def _verificar_de_tempos_em_tempos(janela: JanelaPrincipal, contexto: ContextoApp) -> None:
+    """Quem deixa o app aberto o dia todo também é lembrado da versão nova (o aviso volta a aparecer)."""
+    def consultar() -> None:
+        if contexto.config.verificar_atualizacoes:
+            _verificar_nova_versao(janela)
+
+    relogio = QTimer(janela)
+    relogio.setInterval(INTERVALO_VERIFICACAO_MS)
+    relogio.timeout.connect(consultar)
+    relogio.start()
+
+
 def executar() -> int:
     configurar_logs()
     arquivos = arquivos_da_linha_de_comando(sys.argv[1:])
@@ -121,4 +135,5 @@ def executar() -> int:
         janela.receber_externos(arquivos, ferramenta)
     if contexto.config.verificar_atualizacoes:
         _verificar_nova_versao(janela)
+    _verificar_de_tempos_em_tempos(janela, contexto)
     return app.exec()
