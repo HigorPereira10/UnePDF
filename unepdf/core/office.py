@@ -379,6 +379,23 @@ def _iniciar_com() -> bool:
     return True
 
 
+def _encerrar_com() -> None:
+    """Solta os objetos do Office que ainda existam antes de encerrar a automação: liberados depois,
+    eles chamam um Office que já fechou e derrubam o Python (erro 0x800706ba)."""
+    import gc
+
+    import pythoncom
+
+    gc.collect()
+    pythoncom.CoUninitialize()
+
+
+def _sem_rastro(erro: Exception) -> Exception:
+    """O rastro do erro guarda as variáveis do momento, inclusive o documento aberto no Office."""
+    erro.__traceback__ = None
+    return erro
+
+
 def converter_documentos(
     preparo: Preparo,
     pasta: Path,
@@ -443,9 +460,7 @@ def converter_documentos(
             for instancia in instancias.values():
                 instancia.fechar()
             if com_iniciado:
-                import pythoncom
-
-                pythoncom.CoUninitialize()
+                _encerrar_com()
 
     if not resultado.gerados:
         raise ErroUnePDF("Nenhum dos arquivos pôde ser convertido.", resultado.ignorados)
@@ -470,7 +485,7 @@ def _converter_um_com_office(
             _exportar_com_office(instancia, caminho, saida)
             falha = None
         except Exception as erro:
-            falha = erro
+            falha = _sem_rastro(erro)
     if motivo == ["cancelado"]:
         raise OperacaoCancelada()
     if motivo == ["tempo"]:

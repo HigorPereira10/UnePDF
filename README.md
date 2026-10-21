@@ -59,7 +59,7 @@ download. Rodar o instalador novo por cima também funciona.
 | Categoria | Ferramentas |
 |---|---|
 | Organizar | Unir PDFs, Unir em lote, Separar emitidas e recebidas (notas fiscais), Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
-| Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Office para PDF (Word, Excel e PowerPoint), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
+| Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Office para PDF (Word, Excel e PowerPoint), PDF para Word, PDF para Excel (tabelas), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
 | Segurança | Proteger com senha (AES de 256 bits), Remover senha e Assinar PDF (certificado digital A1) |
 | Otimizar | Comprimir PDF e OCR (deixa PDFs escaneados e imagens pesquisáveis) |
@@ -218,6 +218,17 @@ Converte documentos do Word, do Excel e do PowerPoint em lote, usando o Microsof
 abrir nenhuma janela e sem mexer nos documentos que você estiver editando. Sem o Office, usa o
 LibreOffice. Opção de salvar em PDF/A.
 
+### PDF para Word e PDF para Excel
+
+- **PDF para Word** usa o conversor de PDF do próprio Microsoft Word instalado: o texto fica editável,
+  bom para contratos, procurações e ofícios. Layouts com várias colunas e muitos gráficos podem mudar
+  um pouco. O Word abre uma cópia do PDF, invisível, e o arquivo original não é tocado.
+- **PDF para Excel** lê as tabelas de cada página (com ou sem as linhas desenhadas) e grava uma
+  planilha, com uma aba por página ou todas as tabelas numa aba só. Valores como "1.234,56" viram
+  números, prontos para somar; códigos com zero à esquerda, CNPJ e datas continuam como texto.
+
+PDFs escaneados precisam passar pelo OCR antes, para ter texto.
+
 ## Programas externos
 
 Algumas ferramentas usam programas gratuitos e separados do UnePDF. Sem eles, todas as outras
@@ -228,6 +239,7 @@ funcionam normalmente; as que dependem deles aparecem com a explicação do que 
 | [Ghostscript](https://ghostscript.com/) | PDF para PDF/A, compressão forte e PDF/A no Office para PDF | Vem com o instalador e com o `.zip` |
 | [Tesseract](https://github.com/tesseract-ocr/tesseract) | OCR e leitura de páginas escaneadas no PDF para texto | Vem com o instalador e com o `.zip` |
 | Microsoft Office ou [LibreOffice](https://www.libreoffice.org/) | Office para PDF | Usa o que estiver instalado no computador |
+| Microsoft Word (2013 ou mais novo) | PDF para Word | Usa o que estiver instalado no computador |
 
 Rodando pelo código-fonte, instale o Ghostscript pela
 [página de downloads](https://ghostscript.com/releases/gsdnld.html) e o Tesseract pela versão da
@@ -309,8 +321,8 @@ single PDF, and grew into a full set of everyday PDF tools:
   invoices into issued and received (by the CNPJ in the access key, with no customer list), split,
   reorder, rotate, remove and extract pages with thumbnails;
 - **Convert**: Brazilian electronic invoice XML to PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe and
-  correction letters), Word, Excel and PowerPoint to PDF, images to PDF and back, PDF to text and PDF to
-  PDF/A;
+  correction letters), Word, Excel and PowerPoint to PDF, PDF to Word (through the installed Word),
+  PDF tables to Excel, images to PDF and back, PDF to text and PDF to PDF/A;
 - **Edit**: watermark and page numbers;
 - **Security**: password protection (AES-256), password removal and digital signatures with A1
   certificates (`.pfx`), in the PAdES standard;

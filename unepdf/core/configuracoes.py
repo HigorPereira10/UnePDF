@@ -39,6 +39,8 @@ class Configuracoes:
     office_pdfa: bool = False
     office_juntar: bool = False
     ocr_juntar: bool = False
+    # PDF para Excel: todas as tabelas numa aba só, em vez de uma aba por página
+    excel_uma_aba: bool = False
     # Última pasta de onde um certificado foi aberto (o certificado e a senha nunca são guardados)
     pasta_certificados: str = ""
     verificar_atualizacoes: bool = True

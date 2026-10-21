@@ -33,6 +33,9 @@ pelo pip.
 | idna | Dependência do aiohttp | BSD-3-Clause |
 | tzdata | Fusos horários da data da assinatura | Apache-2.0 |
 | [certifi](https://github.com/certifi/python-certifi) | Certificados das conexões seguras, sem modificação | MPL-2.0 |
+| [pdfplumber](https://github.com/jsvine/pdfplumber) e [pdfminer.six](https://github.com/pdfminer/pdfminer.six) | Leitura das tabelas no PDF para Excel | MIT |
+| charset-normalizer | Dependência do pdfminer.six | MIT |
+| [openpyxl](https://foss.heptapod.net/openpyxl/openpyxl) e et-xmlfile | Gravação das planilhas do PDF para Excel | MIT |
 | [PySide6 e shiboken6](https://doc.qt.io/qtforpython-6/) (Qt for Python) | Interface gráfica | LGPL-3.0 ([texto](licenses/LGPL-3.0.txt), que complementa a [GPL-3.0](licenses/GPL-3.0.txt)) |
 | [Qt 6](https://www.qt.io/) | Bibliotecas da interface, distribuídas junto com o PySide6 | LGPL-3.0 |
 | [Python](https://www.python.org/) | Interpretador incluído no executável | PSF-2.0 |
@@ -85,7 +88,8 @@ uma cópia sem modificações na pasta `tesseract`, com os idiomas português e 
 ## Microsoft Office e LibreOffice
 
 A conversão de documentos do Office usa o Microsoft Office ou o LibreOffice já instalados no
-computador. Eles são programas separados, que o UnePDF apenas aciona, e não vão junto com ele.
+computador, e o PDF para Word usa o conversor de PDF do próprio Microsoft Word. Eles são programas
+separados, que o UnePDF apenas aciona, e não vão junto com ele.
 
 ## Executável e instalador
 

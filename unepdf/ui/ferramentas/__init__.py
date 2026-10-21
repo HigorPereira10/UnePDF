@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from unepdf.core import ghostscript, ocr, office
+from unepdf.core import ghostscript, ocr, office, pdf_office
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
 from unepdf.ui.ferramentas.assinar import TelaAssinar
@@ -19,6 +19,7 @@ from unepdf.ui.ferramentas.ocr_pdf import TelaOcr
 from unepdf.ui.ferramentas.office_pdf import TelaOfficeParaPdf
 from unepdf.ui.ferramentas.otimizar import TelaComprimir
 from unepdf.ui.ferramentas.paginas import TelaExtrair, TelaOrganizar
+from unepdf.ui.ferramentas.pdf_para_office import TelaPdfParaExcel, TelaPdfParaWord
 from unepdf.ui.ferramentas.seguranca import TelaProteger, TelaRemoverSenha
 from unepdf.ui.ferramentas.separar import TelaSepararNotas
 from unepdf.ui.ferramentas.unir import TelaUnir
@@ -117,6 +118,23 @@ FERRAMENTAS: list[Ferramenta] = [
         categoria="Converter",
         tela=TelaOfficeParaPdf,
         motivo_indisponivel=office.disponivel,
+    ),
+    Ferramenta(
+        chave="pdf_word",
+        nome="PDF para Word",
+        descricao="Transforme PDFs em documentos do Word com o texto editável.",
+        icone="assets/icones/pdf_word.svg",
+        categoria="Converter",
+        tela=TelaPdfParaWord,
+        motivo_indisponivel=pdf_office.word_disponivel,
+    ),
+    Ferramenta(
+        chave="pdf_excel",
+        nome="PDF para Excel",
+        descricao="Leve as tabelas de relatórios e extratos em PDF para uma planilha.",
+        icone="assets/icones/pdf_excel.svg",
+        categoria="Converter",
+        tela=TelaPdfParaExcel,
     ),
     Ferramenta(
         chave="imagens_pdf",
