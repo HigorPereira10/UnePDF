@@ -140,8 +140,8 @@ class DialogoAtualizacao(QDialog):
         else:
             self.reject()
 
-    def reject(self) -> None:
-        if self.executor.em_execucao:
-            self.executor.cancelar()
-            self.executor.aguardar()
-        super().reject()
+    def done(self, resultado: int) -> None:
+        # A thread do download termina antes de a janela sumir: destruir uma QThread ativa derruba o app
+        self.executor.cancelar()
+        self.executor.aguardar()
+        super().done(resultado)
