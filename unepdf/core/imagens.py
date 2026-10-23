@@ -19,6 +19,7 @@ from pypdf.generic import ArrayObject, DecodedStreamObject, DictionaryObject, En
 
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.gravacao import gravar_com_seguranca
+from unepdf.core.localizador import FORMATOS_IMAGEM
 from unepdf.core.modelos import ArquivoIgnorado, Resultado
 from unepdf.core.progresso import CallbackProgresso, Cancelamento
 
@@ -122,7 +123,7 @@ def _ler_imagens(caminho: Path, escritor: PdfWriter) -> list[_ImagemPdf]:
         raise ImagemInvalida(f"não foi possível ler o arquivo ({erro.strerror or erro})") from erro
     if not dados:
         raise ImagemInvalida("arquivo vazio (0 KB)")
-    with Image.open(io.BytesIO(dados)) as imagem:
+    with Image.open(io.BytesIO(dados), formats=FORMATOS_IMAGEM) as imagem:
         if imagem.format == "JPEG":
             original = _jpeg_original(dados, imagem)
             if original:

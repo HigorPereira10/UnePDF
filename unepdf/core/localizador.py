@@ -26,6 +26,9 @@ IMAGEM = TipoArquivo(
     "Nenhuma imagem encontrada",
     "Escolha imagens (JPG, PNG, TIFF, BMP ou WEBP)",
 )
+# Formatos que a Pillow pode abrir. A Pillow reconhece o formato pelo conteúdo, não pela extensão:
+# sem a lista, um ".jpg" que na verdade é EPS chamaria o Ghostscript
+FORMATOS_IMAGEM = ("JPEG", "PNG", "TIFF", "BMP", "WEBP")
 XML = TipoArquivo((".xml",), "Nenhum XML encontrado", "Escolha arquivos XML")
 
 

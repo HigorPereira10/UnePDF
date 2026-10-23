@@ -23,7 +23,7 @@ from unepdf.core.erros import ErroUnePDF, OperacaoCancelada
 from unepdf.core.gravacao import gravar_com_seguranca
 from unepdf.core.imagens import TamanhoPagina, imagens_para_pdf
 from unepdf.core.leitor_pdf import PdfInvalido, abrir_pdf, ler_pdf
-from unepdf.core.localizador import IMAGEM, TipoArquivo, eh_do_tipo
+from unepdf.core.localizador import FORMATOS_IMAGEM, IMAGEM, TipoArquivo, eh_do_tipo
 from unepdf.core.modelos import ArquivoIgnorado
 from unepdf.core.progresso import CallbackProgresso, Cancelamento
 from unepdf.core.renderizacao import DocumentoRenderizavel
@@ -161,7 +161,7 @@ def preparar(arquivos: list[Path]) -> PreparoOcr:
     for caminho in arquivos:
         if eh_do_tipo(caminho, IMAGEM):
             try:
-                with Image.open(caminho) as imagem:
+                with Image.open(caminho, formats=FORMATOS_IMAGEM) as imagem:
                     itens.append(ItemOcr(caminho, getattr(imagem, "n_frames", 1), True))
             except (UnidentifiedImageError, OSError, SyntaxError, Image.DecompressionBombError):
                 ignorados.append(ArquivoIgnorado(caminho, "imagem corrompida ou em formato não suportado"))

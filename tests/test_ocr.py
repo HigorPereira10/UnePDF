@@ -250,3 +250,12 @@ def test_pdf_para_texto_com_ocr_de_verdade(tmp_path):
     pdf_para_texto(pdf, tmp_path / "carta.txt", usar_ocr=True)
 
     assert "Contrato" in (tmp_path / "carta.txt").read_text(encoding="utf-8-sig")
+
+
+def test_eps_disfarcado_de_imagem_fica_de_fora(tmp_path):
+    from test_imagens import EPS
+
+    (tmp_path / "scan.tif").write_bytes(EPS)
+    preparo = ocr.preparar([tmp_path / "scan.tif"])
+    assert not preparo.itens
+    assert preparo.ignorados[0].motivo == "imagem corrompida ou em formato não suportado"

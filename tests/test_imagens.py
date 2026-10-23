@@ -130,6 +130,24 @@ def test_ordem_da_lista_e_ignorados(tmp_path):
     }
 
 
+EPS = b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 10 10\n%%EndComments\nshowpage\n%%EOF\n"
+
+
+def test_eps_disfarcado_de_jpg_nao_e_aberto(tmp_path):
+    # A Pillow reconhece o EPS pelo conteúdo e, ao ler, chamaria o Ghostscript
+    disfarcado = tmp_path / "foto.jpg"
+    disfarcado.write_bytes(EPS)
+    with Image.open(disfarcado) as imagem:
+        assert imagem.format == "EPS"
+    Image.new("RGB", (10, 10), "red").save(tmp_path / "ok.png")
+
+    resultado = imagens_para_pdf([disfarcado, tmp_path / "ok.png"], tmp_path / "x.pdf")
+
+    assert {i.caminho.name: i.motivo for i in resultado.ignorados} == {
+        "foto.jpg": "imagem corrompida ou em formato não suportado",
+    }
+
+
 def test_nenhuma_imagem_valida_e_erro(tmp_path):
     (tmp_path / "quebrada.png").write_bytes(b"x")
     with pytest.raises(ErroUnePDF) as erro:
