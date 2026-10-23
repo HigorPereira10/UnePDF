@@ -12,6 +12,7 @@ from unepdf.core import ghostscript, ocr, office, pdf_office
 from unepdf.ui.contexto import ContextoApp
 from unepdf.ui.ferramentas.base import TelaFerramenta
 from unepdf.ui.ferramentas.assinar import TelaAssinar
+from unepdf.ui.ferramentas.conferir import TelaConferirAssinaturas
 from unepdf.ui.ferramentas.converter import TelaImagensParaPdf, TelaPdfA, TelaPdfParaImagens, TelaPdfParaTexto
 from unepdf.ui.ferramentas.dividir import TelaDividir
 from unepdf.ui.ferramentas.editar import TelaMarcaDagua, TelaNumerar
@@ -208,6 +209,14 @@ FERRAMENTAS: list[Ferramenta] = [
         icone="assets/icones/assinar.svg",
         categoria="Segurança",
         tela=TelaAssinar,
+    ),
+    Ferramenta(
+        chave="conferir",
+        nome="Conferir assinaturas",
+        descricao="Veja se as assinaturas digitais de um PDF valem e se o Adobe vai reconhecê-las.",
+        icone="assets/icones/conferir.svg",
+        categoria="Segurança",
+        tela=TelaConferirAssinaturas,
     ),
     Ferramenta(
         chave="comprimir",

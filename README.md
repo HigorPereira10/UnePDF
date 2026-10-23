@@ -61,7 +61,7 @@ download. Rodar o instalador novo por cima também funciona.
 | Organizar | Unir PDFs, Unir em lote, Separar emitidas e recebidas (notas fiscais), Dividir PDF, Organizar páginas (reordenar, girar, remover) e Extrair páginas |
 | Converter | XML para PDF (DANFE, DANFCe, DACTE, DAMDFE, DANFSe e carta de correção), Office para PDF (Word, Excel e PowerPoint), PDF para Word, PDF para Excel (tabelas), Imagens para PDF (sem perda de qualidade), PDF para imagens, PDF para texto e PDF para PDF/A (1b, 2b e 3b) |
 | Editar | Marca d'água e Numerar páginas |
-| Segurança | Proteger com senha (AES de 256 bits), Remover senha e Assinar PDF (certificado digital A1) |
+| Segurança | Proteger com senha (AES de 256 bits), Remover senha, Assinar PDF (certificado digital A1) e Conferir assinaturas |
 | Otimizar | Comprimir PDF e OCR (deixa PDFs escaneados e imagens pesquisáveis) |
 
 <p align="center">
@@ -76,8 +76,9 @@ nenhum deles envia documentos:
 - **aviso de nova versão**: ao abrir (e a cada quatro horas com o app aberto), consulta a página de
   versões deste projeto no GitHub para saber se há uma versão mais nova; o instalador novo só é
   baixado quando você clica em **Atualizar agora** (a consulta dá para desligar em Configurações);
-- **Assinar PDF**: consulta a certificadora para confirmar que o certificado não foi revogado (sem
-  internet, a assinatura é feita mesmo assim).
+- **Assinar PDF** e **Conferir assinaturas**: consultam a certificadora para confirmar que o certificado
+  não foi revogado e para baixar os certificados da cadeia que faltam (sem internet, a assinatura é
+  feita mesmo assim).
 
 ## Destaques
 
@@ -193,11 +194,14 @@ Assina PDFs com certificado digital A1 (arquivo `.pfx`), no padrão PAdES, aceit
 de um cliente que autorizou alguém a assinar por ele.
 
 - antes de assinar, o app mostra o titular, o CNPJ ou CPF, a certificadora e a validade do certificado,
-  recusa certificado vencido e avisa quando o CNPJ do certificado não aparece no documento (para não
-  assinar com o certificado do cliente errado);
+  confere na certificadora se ele chega a uma raiz da ICP-Brasil e não foi revogado, recusa certificado
+  vencido ou revogado e avisa quando o CNPJ do certificado não aparece no documento (para não assinar
+  com o certificado do cliente errado);
 - o carimbo fica sobre a última linha de assinatura do documento, e um clique na prévia da página muda
   o lugar; também dá para assinar sem carimbo;
 - vários PDFs do mesmo titular podem ser assinados de uma vez;
+- a cadeia completa até a raiz da ICP-Brasil vai dentro da assinatura, mesmo quando o `.pfx` traz só o
+  certificado do titular (as raízes oficiais, publicadas pelo ITI, ficam em `assets/icp-brasil`);
 - a senha do certificado nunca é guardada;
 - cada assinatura é anotada num registro local (data, hora, arquivo, titular e usuário do Windows), que
   abre no Excel pelas configurações.
@@ -205,6 +209,14 @@ de um cliente que autorizou alguém a assinar por ele.
 <p align="center">
   <img src="docs/imagens/assinar.png" alt="Assinar PDF com a prévia do carimbo" width="760">
 </p>
+
+### Conferir assinaturas
+
+Mostra, para cada assinatura de um ou mais PDFs, se o documento continua como foi assinado, se o
+certificado era válido na ICP-Brasil (e não revogado) na data da assinatura e se a cadeia do certificado
+e a confirmação de revogação estão dentro do arquivo. Sem a cadeia dentro do PDF, o Adobe pode mostrar a
+assinatura como inválida mesmo quando ela vale, e a ferramenta avisa. Tudo é conferido no próprio
+computador; para a validação oficial, use o [validador do ITI](https://validar.iti.gov.br).
 
 ### OCR
 
@@ -324,8 +336,9 @@ single PDF, and grew into a full set of everyday PDF tools:
   correction letters), Word, Excel and PowerPoint to PDF, PDF to Word (through the installed Word),
   PDF tables to Excel, images to PDF and back, PDF to text and PDF to PDF/A;
 - **Edit**: watermark and page numbers;
-- **Security**: password protection (AES-256), password removal and digital signatures with A1
-  certificates (`.pfx`), in the PAdES standard;
+- **Security**: password protection (AES-256), password removal, digital signatures with A1
+  certificates (`.pfx`) in the PAdES standard, and a local signature checker (ICP-Brasil chain,
+  revocation and whether Adobe Reader can verify the signature on its own);
 - **Optimize**: compression and OCR (searchable PDFs from scans, in Portuguese and English).
 
 Download the installer or the portable `.zip` from the
@@ -334,8 +347,9 @@ The installer is not code-signed yet, so Windows SmartScreen may show a warning:
 and then **Run anyway**. The interface is in Brazilian Portuguese.
 
 The only network access is an optional check for new versions on GitHub (with a one-click update
-that downloads the new installer, verifies its SHA-256 and installs it silently) and, when signing,
-the certificate revocation check with the certificate authority. Documents are never sent.
+that downloads the new installer, verifies its SHA-256 and installs it silently) and, when signing or
+checking signatures, the certificate chain and revocation check with the certificate authority.
+Documents are never sent.
 
 ## Licença
 

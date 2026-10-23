@@ -3,12 +3,20 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-from certificados import CNPJ_EXEMPLO, SENHA, certificado_da_autoridade, criar_pfx
+from certificados import (
+    CNPJ_EXEMPLO,
+    SENHA,
+    certificado_da_autoridade,
+    certificado_intermediario_der,
+    criar_lcr,
+    criar_pfx,
+    numero_de_serie,
+)
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from unepdf.core import assinatura
-from unepdf.core.assinatura import PosicaoCarimbo, abrir_certificado, assinar, assinar_varios
+from unepdf.core.assinatura import PosicaoCarimbo, SituacaoCertificado, abrir_certificado, assinar, assinar_varios
 from unepdf.core.carimbo import fonte_padrao, literal_pdf
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.leitor_pdf import tem_assinatura
@@ -156,8 +164,109 @@ def test_sem_internet_assina_sem_a_confirmacao(tmp_path, certificado, monkeypatc
 
     monkeypatch.setattr(assinatura, "_assinar_bytes", sem_rede)
     resultado = assinar(criar_procuracao(tmp_path / "a.pdf"), tmp_path / "b.pdf", certificado, None)
-    assert not resultado.com_validacao
+    assert not resultado.com_validacao and resultado.sem_internet
     assert validar(resultado.destino)[0].intact
+
+
+@pytest.fixture
+def raiz_de_teste(monkeypatch):
+    """A AC de teste no lugar das raízes da ICP-Brasil."""
+    monkeypatch.setattr(assinatura, "raizes_icp_brasil", lambda: [certificado_da_autoridade()])
+
+
+@pytest.fixture
+def com_internet(monkeypatch):
+    monkeypatch.setattr("socket.create_connection", lambda *args, **kwargs: type("Conexao", (), {"close": lambda self: None})())
+
+
+@pytest.fixture
+def sem_internet(monkeypatch):
+    def recusar(*args, **kwargs):
+        raise OSError("sem conexão")
+
+    monkeypatch.setattr("socket.create_connection", recusar)
+
+
+def pfx_com_lcr(caminho: Path, publicar, revogado: bool = False) -> Path:
+    """Certificado com a lista de revogação publicada no servidor local, como os da ICP-Brasil."""
+    endereco = publicar(f"{caminho.stem}.crl")
+    pfx = criar_pfx(caminho, endereco_lcr=endereco)
+    publicar(f"{caminho.stem}.crl", criar_lcr((numero_de_serie(pfx),) if revogado else ()), "application/pkix-crl")
+    return pfx
+
+
+def _nomes_dos_certificados(caminho: Path) -> set[str]:
+    from pyhanko.pdf_utils.reader import PdfFileReader
+
+    with open(caminho, "rb") as arquivo:
+        cms = PdfFileReader(arquivo).embedded_signatures[0].signed_data
+        return {c.chosen.subject.native["common_name"] for c in cms["certificates"]}
+
+
+def test_raizes_da_icp_brasil():
+    raizes = assinatura.raizes_icp_brasil()
+    assert len(raizes) >= 6
+    assert all(r.self_issued and r.ca for r in raizes)
+    assert all(r.subject.native["common_name"].startswith("Autoridade Certificadora Raiz Brasileira") for r in raizes)
+
+
+def test_pfx_sem_a_cadeia_busca_a_ac_e_inclui_na_assinatura(tmp_path, raiz_de_teste, publicar):
+    # Como alguns e-CNPJ: o .pfx só tem o titular, e a raiz vem do próprio app
+    endereco = publicar("ac.cer", certificado_intermediario_der(), "application/pkix-cert")
+    pfx = criar_pfx(tmp_path / "cliente.pfx", intermediaria=True, com_cadeia=False, endereco_ac=endereco)
+
+    resultado = assinar(criar_procuracao(tmp_path / "a.pdf"), tmp_path / "b.pdf", abrir_certificado(pfx, SENHA), None)
+
+    assert resultado.com_validacao
+    assert "AC INTERMEDIARIA TESTE UNEPDF" in _nomes_dos_certificados(resultado.destino)
+    # Quem confere a assinatura só precisa conhecer a raiz
+    estado = validar(resultado.destino)[0]
+    assert estado.intact and estado.valid and estado.trusted
+
+
+def test_cadeia_desconhecida_com_internet_avisa_que_nao_conferiu(tmp_path, monkeypatch, com_internet):
+    monkeypatch.setattr(assinatura, "raizes_icp_brasil", lambda: [])
+    pfx = criar_pfx(tmp_path / "cliente.pfx", intermediaria=True, com_cadeia=False)
+    origem = criar_procuracao(tmp_path / "a.pdf")
+
+    resultado = assinar_varios([origem], {origem: tmp_path / "b.pdf"}, abrir_certificado(pfx, SENHA), visivel=False)
+
+    assert (resultado.sem_validacao, resultado.sem_cadeia) == (1, 1)
+    assert validar(resultado.gerados[0])[0].intact
+
+
+def test_certificado_revogado_nao_assina(tmp_path, raiz_de_teste, publicar):
+    revogado = abrir_certificado(pfx_com_lcr(tmp_path / "revogado.pfx", publicar, revogado=True), SENHA)
+    with pytest.raises(ErroUnePDF, match="revogado"):
+        assinar(criar_procuracao(tmp_path / "a.pdf"), tmp_path / "b.pdf", revogado, None)
+    assert not (tmp_path / "b.pdf").exists()
+
+
+# Conferência do certificado ao abrir
+
+
+def test_conferir_certificado_valido_e_revogado(tmp_path, raiz_de_teste, publicar):
+    valido = abrir_certificado(pfx_com_lcr(tmp_path / "valido.pfx", publicar), SENHA)
+    revogado = abrir_certificado(pfx_com_lcr(tmp_path / "revogado.pfx", publicar, revogado=True), SENHA)
+    assert assinatura.conferir_certificado(valido) is SituacaoCertificado.VALIDO
+    assert assinatura.conferir_certificado(revogado) is SituacaoCertificado.REVOGADO
+
+
+def test_conferir_certificado_busca_a_ac_que_falta(tmp_path, raiz_de_teste, publicar):
+    endereco = publicar("ac.cer", certificado_intermediario_der(), "application/pkix-cert")
+    pfx = criar_pfx(tmp_path / "c.pfx", intermediaria=True, com_cadeia=False, endereco_ac=endereco)
+    assert assinatura.conferir_certificado(abrir_certificado(pfx, SENHA)) is SituacaoCertificado.VALIDO
+
+
+def test_raiz_dentro_do_pfx_nao_torna_o_certificado_valido(certificado, monkeypatch, com_internet):
+    # O .pfx de teste traz a própria AC; sem ela entre as raízes oficiais, a cadeia é desconhecida
+    monkeypatch.setattr(assinatura, "raizes_icp_brasil", lambda: [])
+    assert assinatura.conferir_certificado(certificado) is SituacaoCertificado.CADEIA_DESCONHECIDA
+
+
+def test_conferir_certificado_sem_internet(tmp_path, raiz_de_teste, sem_internet):
+    pfx = criar_pfx(tmp_path / "c.pfx", intermediaria=True, com_cadeia=False, endereco_ac="http://127.0.0.1:9/ac.cer")
+    assert assinatura.conferir_certificado(abrir_certificado(pfx, SENHA)) is SituacaoCertificado.NAO_CONFERIDO
 
 
 def test_desenho_do_carimbo(certificado):

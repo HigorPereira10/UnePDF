@@ -107,3 +107,39 @@ def janelas_modais_reprovam_o_teste(monkeypatch):
 def criar_pdf():
     """Fixture que devolve a função de criar PDFs, para usar nos testes."""
     return _criar_pdf
+
+
+@pytest.fixture
+def publicar():
+    """Servidor local para os testes de assinatura: publica arquivos como as certificadoras publicam
+    as ACs e as listas de revogação. Devolve a função publicar(nome, conteudo, tipo) -> endereço."""
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    arquivos: dict[str, tuple[bytes, str]] = {}
+
+    class Publicador(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path not in arquivos:
+                self.send_error(404)
+                return
+            corpo, tipo = arquivos[self.path]
+            self.send_response(200)
+            self.send_header("Content-Type", tipo)
+            self.send_header("Content-Length", str(len(corpo)))
+            self.end_headers()
+            self.wfile.write(corpo)
+
+        def log_message(self, *args):
+            pass
+
+    servidor = ThreadingHTTPServer(("127.0.0.1", 0), Publicador)
+    threading.Thread(target=servidor.serve_forever, daemon=True).start()
+
+    def publicar_arquivo(nome: str, conteudo: bytes = b"", tipo: str = "application/octet-stream") -> str:
+        arquivos[f"/{nome}"] = (conteudo, tipo)
+        return f"http://127.0.0.1:{servidor.server_port}/{nome}"
+
+    yield publicar_arquivo
+    servidor.shutdown()
+    servidor.server_close()

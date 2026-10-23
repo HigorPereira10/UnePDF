@@ -7,6 +7,7 @@ certificadora sai do computador, nunca o documento.
 """
 from __future__ import annotations
 
+import asyncio
 import csv
 import getpass
 import io
@@ -16,6 +17,7 @@ import re
 import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 
 from pypdf import PdfWriter
@@ -26,8 +28,12 @@ from unepdf.core.erros import ErroUnePDF
 from unepdf.core.gravacao import gravar_com_seguranca
 from unepdf.core.leitor_pdf import ler_pdf_ou_erro
 from unepdf.core.renderizacao import DocumentoRenderizavel
+from unepdf.utils.recursos import caminho_recurso
 
 log = logging.getLogger(__name__)
+
+PASTA_RAIZES = "assets/icp-brasil"
+SERVIDOR_ICP_BRASIL = "acraiz.icpbrasil.gov.br"
 
 # Campos de identificação dos certificados ICP-Brasil, no "nome alternativo" do certificado
 _OID_CNPJ = "2.16.76.1.3.3"
@@ -68,6 +74,13 @@ class Certificado:
         return datetime.now(timezone.utc) > self.valido_ate
 
 
+class SituacaoCertificado(Enum):
+    VALIDO = "válido"  # cadeia até uma raiz da ICP-Brasil e não revogado
+    REVOGADO = "revogado"
+    CADEIA_DESCONHECIDA = "cadeia desconhecida"  # não chega a uma raiz da ICP-Brasil
+    NAO_CONFERIDO = "não conferido"  # sem internet, ou a certificadora não respondeu
+
+
 def _conteudo_der(valor: bytes) -> bytes:
     """Conteúdo de um valor DER simples (tipo, tamanho e dados), sem o tipo e o tamanho."""
     if len(valor) < 2:
@@ -80,7 +93,7 @@ def _conteudo_der(valor: bytes) -> bytes:
     return valor[2 + bytes_do_tamanho:2 + bytes_do_tamanho + tamanho]
 
 
-def _documento_do_certificado(certificado, nome_comum: str) -> str:
+def documento_do_certificado(certificado, nome_comum: str) -> str:
     from cryptography import x509
 
     try:
@@ -122,7 +135,7 @@ def abrir_certificado(caminho: Path, senha: str) -> Certificado:
         return atributos[0].value if atributos else nome.rfc4514_string()
 
     titular = nome_comum(certificado.subject)
-    documento = _documento_do_certificado(certificado, titular)
+    documento = documento_do_certificado(certificado, titular)
     return Certificado(
         titular=titular,
         nome=re.sub(r":\d{11,14}$", "", titular),
@@ -261,18 +274,100 @@ class ResultadoAssinatura:
     substituiu_anterior: bool
     com_validacao: bool  # a confirmação de não revogação foi incluída
     pagina: int | None  # página do carimbo (None quando a assinatura é invisível)
+    sem_internet: bool = False  # sem a confirmação por falta de conexão ou de resposta da certificadora
 
 
-def _contexto_de_validacao(certificado: Certificado):
+def raizes_icp_brasil() -> list:
+    """Raízes oficiais da ICP-Brasil, do repositório do ITI. Muitos .pfx trazem só o certificado do titular."""
+    from asn1crypto import pem, x509 as x509_asn1
+
+    raizes = []
+    for arquivo in sorted(caminho_recurso(PASTA_RAIZES).glob("*.crt")):
+        dados = arquivo.read_bytes()
+        if pem.detect(dados):
+            dados = pem.unarmor(dados)[2]
+        raizes.append(x509_asn1.Certificate.load(dados))
+    return raizes
+
+
+def _contexto_de_validacao(certificado: Certificado, buscador):
     from pyhanko_certvalidator import ValidationContext
-    from pyhanko_certvalidator.fetchers.aiohttp_fetchers import AIOHttpFetcherBackend
 
     cadeia = list(certificado.assinante.cert_registry)
-    raizes = [c for c in cadeia if c.self_signed] or cadeia[-1:]
+    raizes = [c for c in cadeia if c.self_issued] + raizes_icp_brasil()
     return ValidationContext(
         trust_roots=raizes, other_certs=cadeia, allow_fetching=True, revocation_mode="hard-fail",
-        fetcher_backend=AIOHttpFetcherBackend(per_request_timeout=15),
+        fetcher_backend=buscador,
     )
+
+
+async def _completar_cadeia(certificado: Certificado, contexto) -> None:
+    """Junta à assinatura os intermediários que faltam no .pfx, buscados na certificadora.
+
+    O pyHanko os grava só nos dados de validação, e sem eles o Adobe não monta o caminho até a raiz.
+    """
+    from pyhanko.sign.general import SigningError
+    from pyhanko_certvalidator import CertificateValidator
+    from pyhanko_certvalidator.errors import PathBuildingError, PathValidationError
+
+    assinante = certificado.assinante
+    validador = CertificateValidator(
+        assinante.signing_cert, intermediate_certs=assinante.cert_registry, validation_context=contexto,
+    )
+    try:
+        caminho = await validador.async_validate_usage({"non_repudiation"})
+    except (PathBuildingError, PathValidationError) as erro:
+        raise SigningError("The signer's certificate could not be validated") from erro
+    assinante.cert_registry.register_multiple(c for c in caminho.iter_certs(include_root=False) if c != assinante.signing_cert)
+
+
+def situacao_pelo_erro(erro: BaseException) -> SituacaoCertificado:
+    """Traduz a falha da validação do certificado (pyHanko) para o que o usuário precisa saber."""
+    from pyhanko_certvalidator.errors import InsufficientRevinfoError, PathBuildingError, PathValidationError, RevokedError
+
+    causas = []
+    while erro is not None and erro not in causas:
+        causas.append(erro)
+        erro = erro.__cause__ or erro.__context__
+    if any(isinstance(c, RevokedError) for c in causas):
+        return SituacaoCertificado.REVOGADO
+    if _sem_internet(causas[0]) or any(isinstance(c, InsufficientRevinfoError) for c in causas):
+        return SituacaoCertificado.NAO_CONFERIDO
+    if any(isinstance(c, (PathBuildingError, PathValidationError)) for c in causas):
+        return SituacaoCertificado.CADEIA_DESCONHECIDA
+    return SituacaoCertificado.NAO_CONFERIDO
+
+
+def conferir_certificado(certificado: Certificado) -> SituacaoCertificado:
+    """Confere, antes de assinar, se o certificado chega a uma raiz da ICP-Brasil e não foi revogado.
+
+    Só as raízes oficiais contam: uma raiz que venha dentro do .pfx não torna o certificado válido.
+    """
+    from pyhanko_certvalidator import CertificateValidator, ValidationContext
+    from pyhanko_certvalidator.fetchers.aiohttp_fetchers import AIOHttpFetcherBackend
+
+    assinante = certificado.assinante
+
+    async def conferir() -> None:
+        buscador = AIOHttpFetcherBackend(per_request_timeout=15)
+        try:
+            contexto = ValidationContext(
+                trust_roots=raizes_icp_brasil(), other_certs=list(assinante.cert_registry), allow_fetching=True,
+                revocation_mode="hard-fail", fetcher_backend=buscador,
+            )
+            validador = CertificateValidator(
+                assinante.signing_cert, intermediate_certs=assinante.cert_registry, validation_context=contexto,
+            )
+            await validador.async_validate_usage({"non_repudiation"})
+        finally:
+            await buscador.close()
+
+    try:
+        asyncio.run(conferir())
+    except Exception as erro:
+        log.info("Certificado de %s não confirmado: %s", certificado.titular, erro)
+        return situacao_pelo_erro(erro)
+    return SituacaoCertificado.VALIDO
 
 
 def _assinar_bytes(dados: bytes, certificado: Certificado, posicao: PosicaoCarimbo | None, quando: datetime,
@@ -280,6 +375,7 @@ def _assinar_bytes(dados: bytes, certificado: Certificado, posicao: PosicaoCarim
     from pyhanko import stamp
     from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
     from pyhanko.sign import fields, signers
+    from pyhanko_certvalidator.fetchers.aiohttp_fetchers import AIOHttpFetcherBackend
 
     escritor = IncrementalPdfFileWriter(io.BytesIO(dados), strict=False)
     existentes = {nome for nome, _, _ in fields.enumerate_sig_fields(escritor)}
@@ -288,11 +384,29 @@ def _assinar_bytes(dados: bytes, certificado: Certificado, posicao: PosicaoCarim
         numero += 1
     nome_campo = f"Assinatura{numero}"
 
-    metadados = signers.PdfSignatureMetadata(
-        field_name=nome_campo, md_algorithm="sha256", subfilter=fields.SigSeedSubFilter.PADES,
-        name=certificado.titular, embed_validation_info=com_validacao,
-        validation_context=_contexto_de_validacao(certificado) if com_validacao else None,
-    )
+    async def assinar_com(buscador) -> bytes:
+        contexto = None
+        if com_validacao:
+            contexto = _contexto_de_validacao(certificado, buscador)
+            await _completar_cadeia(certificado, contexto)
+        metadados = signers.PdfSignatureMetadata(
+            field_name=nome_campo, md_algorithm="sha256", subfilter=fields.SigSeedSubFilter.PADES,
+            name=certificado.titular, embed_validation_info=com_validacao, validation_context=contexto,
+        )
+        assinador = signers.PdfSigner(metadados, signer=certificado.assinante, stamp_style=estilo, new_field_spec=campo)
+        saida = io.BytesIO()
+        await assinador.async_sign_pdf(escritor, output=saida)
+        return saida.getvalue()
+
+    async def assinar_e_fechar() -> bytes:
+        if not com_validacao:
+            return await assinar_com(None)
+        buscador = AIOHttpFetcherBackend(per_request_timeout=15)
+        try:
+            return await assinar_com(buscador)
+        finally:
+            await buscador.close()
+
     estilo = None
     with tempfile.TemporaryDirectory(prefix="unepdf-assinatura-", ignore_cleanup_errors=True) as temporaria:
         if posicao is not None:
@@ -303,10 +417,32 @@ def _assinar_bytes(dados: bytes, certificado: Certificado, posicao: PosicaoCarim
             campo = fields.SigFieldSpec(nome_campo, on_page=posicao.pagina, box=tuple(round(v) for v in posicao.caixa))
         else:
             campo = fields.SigFieldSpec(nome_campo, on_page=0, box=None)
-        assinador = signers.PdfSigner(metadados, signer=certificado.assinante, stamp_style=estilo, new_field_spec=campo)
-        saida = io.BytesIO()
-        assinador.sign_pdf(escritor, output=saida)
-        return saida.getvalue()
+        return asyncio.run(assinar_e_fechar())
+
+
+def sem_conexao() -> bool:
+    """Confere se o repositório da ICP-Brasil responde. Nenhum dado é enviado."""
+    import socket
+
+    try:
+        socket.create_connection((SERVIDOR_ICP_BRASIL, 80), timeout=5).close()
+    except OSError:
+        return True
+    return False
+
+
+def _sem_internet(erro: BaseException) -> bool:
+    """Se a confirmação falhou por falta de conexão, e não por um problema na cadeia do certificado."""
+    import aiohttp
+
+    vistos = set()
+    while erro is not None and id(erro) not in vistos:
+        vistos.add(id(erro))
+        if isinstance(erro, (OSError, aiohttp.ClientError)):
+            return True
+        erro = erro.__cause__ or erro.__context__
+    # Sem a cadeia completa o pyHanko não diz se a busca falhou por conexão
+    return sem_conexao()
 
 
 def assinar(
@@ -326,14 +462,19 @@ def assinar(
     quando = quando or datetime.now().astimezone()
 
     com_validacao = False
+    sem_internet = False
     assinado = None
     if incluir_validacao:
         try:
             assinado = _assinar_bytes(dados, certificado, posicao, quando, True)
             com_validacao = True
-        except Exception:
-            # Sem internet ou sem resposta da certificadora: assina sem a confirmação embutida
+        except Exception as erro:
+            # Sem internet, sem resposta da certificadora ou cadeia desconhecida: assina sem a confirmação embutida
             log.warning("Assinatura sem os dados de revogação de %s", origem, exc_info=True)
+            situacao = situacao_pelo_erro(erro)
+            if situacao is SituacaoCertificado.REVOGADO:
+                raise ErroUnePDF("O certificado foi revogado pela certificadora e não pode mais assinar.") from erro
+            sem_internet = situacao is SituacaoCertificado.NAO_CONFERIDO
     if assinado is None:
         try:
             assinado = _assinar_bytes(dados, certificado, posicao, quando, False)
@@ -344,7 +485,7 @@ def assinar(
             raise ErroUnePDF(f'Não foi possível assinar "{origem.name}". Os detalhes ficaram no registro de atividades.') from erro
 
     substituiu = gravar_com_seguranca(destino, lambda arquivo: arquivo.write(assinado))
-    return ResultadoAssinatura(destino, substituiu, com_validacao, posicao.pagina if posicao else None)
+    return ResultadoAssinatura(destino, substituiu, com_validacao, posicao.pagina if posicao else None, sem_internet)
 
 
 def registrar(arquivo_registro: Path, assinado: Path, certificado: Certificado, quando: datetime | None = None) -> None:
@@ -375,6 +516,7 @@ class ResultadoLoteAssinatura:
     gerados: list[Path] = field(default_factory=list)
     ignorados: list = field(default_factory=list)
     sem_validacao: int = 0  # assinados sem a confirmação da certificadora (ex.: sem internet)
+    sem_cadeia: int = 0  # dos sem confirmação, os que tinham internet mas a cadeia não foi conferida
     substituidos: int = 0
     pendentes: int = 0
 
@@ -415,6 +557,7 @@ def assinar_varios(
         resultado.gerados.append(assinado.destino)
         resultado.substituidos += assinado.substituiu_anterior
         resultado.sem_validacao += not assinado.com_validacao
+        resultado.sem_cadeia += not assinado.com_validacao and not assinado.sem_internet
         if arquivo_registro:
             registrar(arquivo_registro, assinado.destino, certificado)
     if not resultado.gerados:

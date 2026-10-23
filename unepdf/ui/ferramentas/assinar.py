@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from unepdf.core import assinatura
-from unepdf.core.assinatura import Certificado, PosicaoCarimbo
+from unepdf.core.assinatura import Certificado, PosicaoCarimbo, SituacaoCertificado
 from unepdf.core.erros import ErroUnePDF
 from unepdf.core.leitor_pdf import ler_pdf_ou_erro
 from unepdf.core.localizador import Selecao, montar_selecao
@@ -145,6 +145,7 @@ class TelaAssinar(TelaFerramenta):
         super().__init__(ferramenta, contexto)
         self._preparo: _Preparo | None = None
         self._certificado: Certificado | None = None
+        self._situacao: SituacaoCertificado | None = None
         self._caminho_certificado: Path | None = None
         self._pagina_previa = 0
 
@@ -223,6 +224,8 @@ class TelaAssinar(TelaFerramenta):
         self.dados_certificado = QLabel()
         self.dados_certificado.setWordWrap(True)
         self.dados_certificado.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.situacao_certificado = QLabel()
+        self.situacao_certificado.setWordWrap(True)
         self.aviso_certificado = QLabel()
         self.aviso_certificado.setObjectName("aviso")
         self.aviso_certificado.setWordWrap(True)
@@ -254,6 +257,7 @@ class TelaAssinar(TelaFerramenta):
         layout_direita.addWidget(self.rotulo_certificado)
         layout_direita.addLayout(linha_senha)
         layout_direita.addWidget(self.dados_certificado)
+        layout_direita.addWidget(self.situacao_certificado)
         layout_direita.addWidget(self.aviso_certificado)
         layout_direita.addSpacing(10)
         layout_direita.addWidget(_rotulo_campo("CARIMBO"))
@@ -397,6 +401,7 @@ class TelaAssinar(TelaFerramenta):
         self._certificado = None
         self.rotulo_certificado.setText(self._caminho_certificado.name)
         self.dados_certificado.clear()
+        self.situacao_certificado.clear()
         self.aviso_certificado.clear()
         self.campo_senha.clear()
         self.campo_senha.setFocus()
@@ -421,13 +426,35 @@ class TelaAssinar(TelaFerramenta):
                         ausente.append(arquivo.name)
                 except ErroUnePDF:
                     pass
-            return certificado, ausente
+            situacao = None if certificado.vencido else assinatura.conferir_certificado(certificado)
+            return certificado, ausente, situacao
 
-        self.aviso_certificado.setText("Abrindo o certificado...")
+        self.situacao_certificado.clear()
+        self.aviso_certificado.setText("Abrindo e conferindo o certificado...")
         self.executar(abrir, lambda r: self._ao_abrir_certificado(*r), self._ao_falhar_certificado)
 
-    def _ao_abrir_certificado(self, certificado: Certificado, ausente: list[str]) -> None:
+    def _mostrar_situacao(self, situacao: SituacaoCertificado | None) -> None:
+        textos = {
+            SituacaoCertificado.VALIDO: (
+                CORES.sucesso, "Válido na ICP-Brasil: cadeia e revogação conferidas na certificadora."),
+            SituacaoCertificado.REVOGADO: (
+                CORES.erro, "Revogado pela certificadora: este certificado não pode mais assinar."),
+            SituacaoCertificado.CADEIA_DESCONHECIDA: (
+                CORES.aviso, "Não foi possível ligar este certificado a uma raiz da ICP-Brasil. Dá para assinar, "
+                "mas o Adobe e o validador do ITI podem não reconhecer a assinatura."),
+            SituacaoCertificado.NAO_CONFERIDO: (
+                CORES.aviso, "Não deu para conferir na certificadora (sem internet, ou ela não respondeu). "
+                "Dá para assinar normalmente."),
+        }
+        cor, texto = textos.get(situacao, ("", ""))
+        self.situacao_certificado.setStyleSheet(f"color: {cor};" if cor else "")
+        self.situacao_certificado.setText(texto)
+
+    def _ao_abrir_certificado(self, certificado: Certificado, ausente: list[str],
+                              situacao: SituacaoCertificado | None = None) -> None:
         self._certificado = certificado
+        self._situacao = situacao
+        self._mostrar_situacao(situacao)
         linhas = [f"<b>{certificado.nome}</b>"]
         if certificado.documento:
             linhas.append(f"{certificado.tipo_documento} {certificado.documento_formatado}")
@@ -456,6 +483,7 @@ class TelaAssinar(TelaFerramenta):
     def _ao_falhar_certificado(self, erro: BaseException) -> None:
         self._certificado = None
         self.dados_certificado.clear()
+        self.situacao_certificado.clear()
         if isinstance(erro, ErroUnePDF):
             self.aviso_certificado.setText(str(erro))
         else:
@@ -464,7 +492,10 @@ class TelaAssinar(TelaFerramenta):
         self._atualizar_estado()
 
     def _atualizar_estado(self) -> None:
-        pronto = self._certificado is not None and not self._certificado.vencido and self._preparo is not None
+        pronto = (
+            self._certificado is not None and not self._certificado.vencido and self._preparo is not None
+            and self._situacao is not SituacaoCertificado.REVOGADO
+        )
         self.botao_assinar.setEnabled(pronto)
         if self._preparo:
             self.botao_assinar.setText("Assinar " + plural(len(self._preparo.selecao.arquivos), "PDF", "PDFs"))
@@ -474,7 +505,9 @@ class TelaAssinar(TelaFerramenta):
         # A senha não fica guardada nem na tela depois de trocar de documentos
         self.campo_senha.clear()
         self._certificado = None
+        self._situacao = None
         self.dados_certificado.clear()
+        self.situacao_certificado.clear()
         self.aviso_certificado.clear()
         self.aviso_selecao.clear()
         self.area.mostrar_aviso(None)
@@ -505,13 +538,22 @@ class TelaAssinar(TelaFerramenta):
             plural(len(resultado.gerados), "PDF assinado", "PDFs assinados")
             + f" com o certificado de {self._certificado.nome}."
         ]
-        if resultado.sem_validacao:
+        sem_internet = resultado.sem_validacao - resultado.sem_cadeia
+        if sem_internet:
             partes.append(plural(
-                resultado.sem_validacao,
-                "foi assinado sem a confirmação da certificadora (sem internet?). A assinatura vale, mas fica "
-                "mais difícil de conferir depois que o certificado vencer.",
-                "foram assinados sem a confirmação da certificadora (sem internet?). As assinaturas valem, mas "
-                "ficam mais difíceis de conferir depois que o certificado vencer.",
+                sem_internet,
+                "foi assinado sem a confirmação da certificadora (sem internet, ou ela não respondeu). A "
+                "assinatura vale, mas fica mais difícil de conferir depois que o certificado vencer.",
+                "foram assinados sem a confirmação da certificadora (sem internet, ou ela não respondeu). As "
+                "assinaturas valem, mas ficam mais difíceis de conferir depois que o certificado vencer.",
+            ))
+        if resultado.sem_cadeia:
+            partes.append(plural(
+                resultado.sem_cadeia,
+                "foi assinado sem a confirmação da certificadora: a cadeia do certificado não pôde ser conferida. "
+                "Antes de enviar, confira o PDF em validar.iti.gov.br.",
+                "foram assinados sem a confirmação da certificadora: a cadeia do certificado não pôde ser "
+                "conferida. Antes de enviar, confira os PDFs em validar.iti.gov.br.",
             ))
         if resultado.substituidos:
             partes.append(plural(

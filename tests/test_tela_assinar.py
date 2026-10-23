@@ -3,7 +3,7 @@ import csv
 import pytest
 from certificados import SENHA, criar_pfx
 from pypdf import PdfReader
-from test_assinatura import criar_procuracao
+from test_assinatura import criar_procuracao, pfx_com_lcr, raiz_de_teste  # noqa: F401
 
 from unepdf.core.leitor_pdf import tem_assinatura
 from unepdf.ui.contexto import ContextoApp
@@ -12,7 +12,7 @@ from unepdf.ui.janela_principal import JanelaPrincipal
 
 
 @pytest.fixture
-def tela(qtbot, tmp_path, monkeypatch):
+def tela(qtbot, tmp_path, monkeypatch, raiz_de_teste):
     monkeypatch.setenv("APPDATA", str(tmp_path / "appdata"))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "local"))
     janela = JanelaPrincipal(ContextoApp())
@@ -45,6 +45,7 @@ def test_assinar_um_pdf_com_carimbo(qtbot, tela, tmp_path, monkeypatch):
 
     assert "EMPRESA EXEMPLO LTDA" in tela.dados_certificado.text()
     assert "12.345.678/0001-99" in tela.dados_certificado.text()
+    assert "Válido na ICP-Brasil" in tela.situacao_certificado.text()
     assert tela.aviso_certificado.text() == ""
     assert tela.botao_assinar.isEnabled()
     assert tela.contexto.config.pasta_certificados == str(tmp_path / "certs")
@@ -84,6 +85,30 @@ def test_senha_errada_e_certificado_vencido(qtbot, tela, tmp_path, monkeypatch):
     _abrir_certificado(qtbot, tela, monkeypatch, criar_pfx(tmp_path / "v.pfx", dias_restantes=-1))
     assert "vencido" in tela.aviso_certificado.text()
     assert not tela.botao_assinar.isEnabled()
+
+
+def test_certificado_revogado_nao_deixa_assinar(qtbot, tela, tmp_path, monkeypatch, publicar):
+    tela.receber_caminhos([criar_procuracao(tmp_path / "a.pdf")])
+    _esperar(qtbot, tela)
+
+    _abrir_certificado(qtbot, tela, monkeypatch, pfx_com_lcr(tmp_path / "revogado.pfx", publicar, revogado=True))
+
+    assert "Revogado" in tela.situacao_certificado.text()
+    assert not tela.botao_assinar.isEnabled()
+
+
+def test_cadeia_desconhecida_avisa_mas_deixa_assinar(qtbot, tela, tmp_path, monkeypatch):
+    from unepdf.core import assinatura
+
+    monkeypatch.setattr(assinatura, "raizes_icp_brasil", lambda: [])
+    monkeypatch.setattr("socket.create_connection", lambda *a, **k: type("Conexao", (), {"close": lambda self: None})())
+    tela.receber_caminhos([criar_procuracao(tmp_path / "a.pdf")])
+    _esperar(qtbot, tela)
+
+    _abrir_certificado(qtbot, tela, monkeypatch, criar_pfx(tmp_path / "c.pfx"))
+
+    assert "raiz da ICP-Brasil" in tela.situacao_certificado.text()
+    assert tela.botao_assinar.isEnabled()
 
 
 def test_clique_na_previa_muda_o_carimbo(qtbot, tela, tmp_path):
